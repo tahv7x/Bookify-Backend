@@ -27,7 +27,7 @@ namespace Bookify_API.Controllers
             this.configuration = config;
             this.emailService = em;
         }
-
+        //Pour generate le token JWT
         private string GenerateJwtToken(Utilisateur user, IConfiguration config)
         {
             var jwtSettings = config.GetSection("Jwt");
@@ -93,7 +93,9 @@ namespace Bookify_API.Controllers
                     idUtilisateur = user.IdUtilisateur,
                     nom = user.NomComplet,
                     email = user.Email,
-                    role = user.Role
+                    role = user.Role,
+                    adresse = user.Adresse,
+                    telephone = user.Telephone
                 }
             });
         }
