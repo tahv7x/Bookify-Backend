@@ -19,6 +19,6 @@ Clean, layered architecture with proper validation, DTOs, and service-based logi
 
 ## Installation
 ```bash
-git clone https://github.com/USERNAME/bookify-backend.git
+git clone https://github.com/tahv7x/bookify-backend.git
 cd bookify-backend
 dotnet restore
