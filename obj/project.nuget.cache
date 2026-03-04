@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "A+qoE2T9tVg=",
+  "dgSpecHash": "btIoBETPuOg=",
   "success": true,
-  "projectFilePath": "C:\\Users\\pc\\Documents\\School\\pfe\\DEV\\Bookify\\Back-end\\Bookify-API\\Bookify-API.csproj",
+  "projectFilePath": "C:\\Users\\pc\\Documents\\School\\pfe\\DEV\\Bookify\\backend\\bookify-backend\\Bookify-API\\Bookify-API.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\pc\\.nuget\\packages\\bcrypt.net-next\\4.0.3\\bcrypt.net-next.4.0.3.nupkg.sha512",
     "C:\\Users\\pc\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",

@@ -1,15 +1,16 @@
-﻿using Bookify_API.Models;
+﻿using BCrypt.Net;
+using Bookify_API.DTOs;
+using Bookify_API.Models;
+using Bookify_API.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Configuration;
-using System.Text;
-using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-using BCrypt.Net;
-using Bookify_API.DTOs;
-using Microsoft.AspNetCore.Identity;
-using Bookify_API.Services;
+using System.Security.Claims;
+using System.Text;
 
 namespace Bookify_API.Controllers
 {
@@ -99,7 +100,28 @@ namespace Bookify_API.Controllers
                 }
             });
         }
+        [HttpPut("change-password/{id}")]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword(int id, ChangePasswordDto dto)
+        {
+            var userIdFromToken = User.FindFirst("id")?.Value;
+            if (userIdFromToken == null || userIdFromToken != id.ToString())
+                return Forbid();
 
+            var user = await context.Utilisateurs.FindAsync(id);
+            if (user == null) return NotFound("Utilisateur introuvable");
+
+            if (!BCrypt.Net.BCrypt.Verify(dto.AncienMotDePasse, user.PasswordHash))
+                return BadRequest(new { message = "Mot de passe actuel incorrect." });
+
+            if (dto.NouveauMotDePasse.Length < 8)
+                return BadRequest(new { message = "Le nouveau mot de passe doit contenir au moins 8 caractères." });
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NouveauMotDePasse);
+            await context.SaveChangesAsync();
+
+            return Ok(new { message = "Mot de passe modifié avec succès." });
+        }
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword(ForgotPasswordDto dto)
         {

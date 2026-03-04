@@ -40,16 +40,34 @@ namespace Bookify_API.Controllers
         [Authorize]
         public IActionResult Update(int id, UpdateUtilisateurDto miseUtilisateur)
         {
+            var userIdFromToken = User.FindFirst("id")?.Value;
+            var userRole = User.FindFirst("role")?.Value;
+
+            if (userIdFromToken == null)
+            {
+                return Unauthorized();
+            }
+
+            if(userRole != "ADMIN" && userIdFromToken != id.ToString())
+            {
+                return Forbid();
+            }
+
             var user = context.Utilisateurs.Find(id);
             if (user == null) return NotFound();
 
             user.NomComplet = miseUtilisateur.NomComplet;
             user.Telephone = miseUtilisateur.Telephone;
             user.Adresse = miseUtilisateur.Adresse;
-            user.Role = miseUtilisateur.Role;
-            context.SaveChanges();
 
-            return Ok(user);
+            if (userRole == "ADMIN" && !string.IsNullOrEmpty(miseUtilisateur.Role))
+                user.Role = miseUtilisateur.Role;
+            context.SaveChanges();
+            return Ok(new
+            {
+                message = "Profil mis a jour",
+                user
+            });
         }
 
         [HttpDelete("{id}")]
