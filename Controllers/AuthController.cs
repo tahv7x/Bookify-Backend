@@ -3,7 +3,6 @@ using Bookify_API.DTOs;
 using Bookify_API.Models;
 using Bookify_API.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -22,13 +21,14 @@ namespace Bookify_API.Controllers
         private readonly IConfiguration configuration;
         private readonly EmailService emailService;
 
-        public AuthController(AppDbContext context, IConfiguration config,EmailService em)
+        public AuthController(AppDbContext context, IConfiguration config, EmailService em)
         {
             this.context = context;
             this.configuration = config;
             this.emailService = em;
         }
-        //Pour generate le token JWT
+
+        // Generate JWT token
         private string GenerateJwtToken(Utilisateur user, IConfiguration config)
         {
             var jwtSettings = config.GetSection("Jwt");
@@ -100,6 +100,7 @@ namespace Bookify_API.Controllers
                 }
             });
         }
+
         [HttpPut("change-password/{id}")]
         [Authorize]
         public async Task<IActionResult> ChangePassword(int id, ChangePasswordDto dto)
@@ -122,6 +123,7 @@ namespace Bookify_API.Controllers
 
             return Ok(new { message = "Mot de passe modifié avec succès." });
         }
+
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword(ForgotPasswordDto dto)
         {
@@ -129,6 +131,7 @@ namespace Bookify_API.Controllers
 
             if (user == null)
                 return BadRequest("Email Non trouvé");
+
             var code = new Random().Next(100000, 999999).ToString();
 
             user.ResetPasswordCode = code;
@@ -136,26 +139,32 @@ namespace Bookify_API.Controllers
 
             await context.SaveChangesAsync();
 
+            // Build the branded Bookify HTML email
+            var htmlBody = emailService.BuildResetCodeEmail(user.NomComplet, code);
+
             emailService.Send(
                 user.Email,
-                "Code de réinitialisation du mot de passe",
-                $"Votre code de vérification est : {code}"
+                "Code de réinitialisation – Bookify",
+                htmlBody,
+                isHtml: true
             );
-            return Ok("Code de verification envoyé Par Email ");
+
+            return Ok("Code de vérification envoyé par Email");
         }
+
         [HttpPost("verify-reset-code")]
         public async Task<IActionResult> VerifyResetCode(VerifyCodeDto dto)
         {
             var user = await context.Utilisateurs.FirstOrDefaultAsync(u => u.Email == dto.Email);
             if (user == null)
                 return BadRequest("Utilisateur Introuvable");
-            if(user.ResetPasswordCode != dto.Code || user.ResetCodeExpiry < DateTime.Now)
-            {
-                return BadRequest("Code Invalide ou expire");
-            }
+
+            if (user.ResetPasswordCode != dto.Code || user.ResetCodeExpiry < DateTime.Now)
+                return BadRequest("Code Invalide ou expiré");
 
             return Ok("Code Validé");
         }
+
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword(ResetPasswordDto dto)
         {
@@ -164,8 +173,10 @@ namespace Bookify_API.Controllers
 
             if (user == null)
                 return BadRequest("Utilisateur Introuvable");
+
             if (user.ResetPasswordCode != dto.Code || user.ResetCodeExpiry < DateTime.Now)
                 return BadRequest("Code Invalide ou expiré");
+
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
             user.ResetPasswordCode = null;
             user.ResetCodeExpiry = null;
@@ -174,6 +185,5 @@ namespace Bookify_API.Controllers
 
             return Ok("Mot de passe modifié avec succès");
         }
-
     }
 }
