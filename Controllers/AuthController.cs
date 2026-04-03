@@ -17,11 +17,11 @@ namespace Bookify_API.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly AppDbContext context;
+        private readonly BookifyDbContext context;
         private readonly IConfiguration configuration;
         private readonly EmailService emailService;
 
-        public AuthController(AppDbContext context, IConfiguration config, EmailService em)
+        public AuthController(BookifyDbContext context, IConfiguration config, EmailService em)
         {
             this.context = context;
             this.configuration = config;

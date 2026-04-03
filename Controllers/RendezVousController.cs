@@ -10,8 +10,8 @@ namespace Bookify_API.Controllers
     [ApiController]
     public class RendezVousController : ControllerBase
     {
-        private readonly AppDbContext context;
-        public RendezVousController(AppDbContext context)
+        private readonly BookifyDbContext context;
+        public RendezVousController(BookifyDbContext context)
         {
             this.context = context;
         }

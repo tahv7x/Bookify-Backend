@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System;
 using Bookify_API.Services;
+using Bookify_API.Models;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,7 +36,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 //Connection mea la base donnees li keyn F appSetting.json
-builder.Services.AddDbContext<AppDbContext>(options =>
+builder.Services.AddDbContext<BookifyDbContext>(options =>
     options.UseMySql(
         builder.Configuration.GetConnectionString("DefaultConnection"),
         ServerVersion.AutoDetect(
@@ -44,6 +45,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     )
 );
 builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<CloudinaryService>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReact",

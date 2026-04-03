@@ -4,18 +4,20 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-
+using Bookify_API.Services;
 namespace Bookify_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     public class UtilisateurController : ControllerBase
     {
-        private readonly AppDbContext context;
+        private readonly BookifyDbContext context;
+        private readonly CloudinaryService cloudinaryService;
 
-        public UtilisateurController(AppDbContext context)
+        public UtilisateurController(BookifyDbContext context, CloudinaryService cloudinaryService)
         {
             this.context = context;
+            this.cloudinaryService = cloudinaryService;
         }
 
         [HttpGet]
@@ -48,7 +50,7 @@ namespace Bookify_API.Controllers
                 return Unauthorized();
             }
 
-            if(userRole != "ADMIN" && userIdFromToken != id.ToString())
+            if (userRole != "ADMIN" && userIdFromToken != id.ToString())
             {
                 return Forbid();
             }
@@ -74,12 +76,66 @@ namespace Bookify_API.Controllers
         public IActionResult Delete(int id)
         {
             var user = context.Utilisateurs.Find(id);
-            if(user == null) return NotFound();
+            if (user == null) return NotFound();
 
             context.Utilisateurs.Remove(user);
             context.SaveChanges();
 
             return Ok("Utilisateur Supprimé");
+        }
+        //Upload Avatar
+        [HttpPost("{id}/avatar")]
+        [Authorize]
+        public async Task<IActionResult> UploadeAvatar(int id, IFormFile file)
+        {
+            var tokenId = User.FindFirst("id")?.Value;
+            if (tokenId == null || tokenId != id.ToString()) return Forbid();
+
+            var user = await context.Utilisateurs.FindAsync(id);
+            if (user == null) return NotFound(new { message = "Utilisateur Introuvable" });
+
+            if (file == null || file.Length == 0) return BadRequest(new { message = "Aucun FIchier" });
+            try
+            {
+                if(!string.IsNullOrEmpty(user.Avatar)) 
+                    await cloudinaryService.DeleteImageAsync(user.Avatar);
+
+                var avatarUrl = await cloudinaryService.UploadImageAsync(file);
+                user.Avatar = avatarUrl;
+
+                await context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    message = "Avatar mis a jour",
+                    avatarUrl = avatarUrl
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+        [HttpDelete("{id}/avatar")]
+        [Authorize]
+        public async Task<IActionResult> DeleteAvatar(int id)
+        {
+            var tokenId = User.FindFirst("id")?.Value;
+            if (tokenId == null || tokenId != id.ToString()) return Forbid();
+
+            var user = await context.Utilisateurs.FindAsync(id);
+            if (user == null) return NotFound(new { message = "Utilisateur Introuvable" });
+
+            if (string.IsNullOrEmpty(user.Avatar)) return BadRequest(new { message = "Aucun avatar a supprimer" });
+
+            await cloudinaryService.DeleteImageAsync(user.Avatar);
+            user.Avatar = null;
+            await context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "Avatar supprimé"
+            });
         }
     }
 }
