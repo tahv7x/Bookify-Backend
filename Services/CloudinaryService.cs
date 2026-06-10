@@ -23,9 +23,9 @@ namespace Bookify_API.Services
         {
             var allowedTypes = new[] { "image/jpeg", "image/png", "image/webp" };
             if(!allowedTypes.Contains(file.ContentType))
-                throw new Exception("Format non support. JPG,PNG et WEBP sont autorisés.");
+                throw new InvalidOperationException("Format non support. JPG,PNG et WEBP sont autorisés.");
             if(file.Length > 5*1024*1024)
-                throw new Exception("Fichier trop grand. Maximum 5MB.");
+                throw new InvalidOperationException("Fichier trop grand. Maximum 5MB.");
             using var stream = file.OpenReadStream();
 
             var uploadParams = new ImageUploadParams
@@ -39,7 +39,7 @@ namespace Bookify_API.Services
             var result = await cloudinary.UploadAsync(uploadParams);
 
             if (result.Error != null)
-                throw new Exception(result.Error.Message);
+                throw new InvalidOperationException(result.Error.Message);
             return result.SecureUrl.ToString();
         }
         public async Task DeleteImageAsync(string imageUrl)
@@ -47,7 +47,7 @@ namespace Bookify_API.Services
             if (string.IsNullOrEmpty(imageUrl)) return; 
             var uri = new Uri(imageUrl);
             var segments = uri.AbsolutePath.Split('/');
-            var uploadIndex = Array.IndexOf(segments, "uploade");
+            var uploadIndex = Array.IndexOf(segments, "upload");
             if (uploadIndex < 0) return;
 
             var publicIdParts = segments.Skip(uploadIndex + 2).ToArray();

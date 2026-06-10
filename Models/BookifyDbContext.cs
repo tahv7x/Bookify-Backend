@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Pomelo.EntityFrameworkCore.MySql.Scaffolding.Internal;
@@ -28,15 +28,50 @@ public partial class BookifyDbContext : DbContext
 
     public virtual DbSet<Utilisateur> Utilisateurs { get; set; }
 
+    public virtual DbSet<Notification> Notifications { get; set; }
+
+    public virtual DbSet<Message> Messages { get; set; }
+
+    public virtual DbSet<Disponibilite> Disponibilites { get; set; }
+
+    public virtual DbSet<Favori> Favoris { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseMySql("server=localhost;database=BookifyDB;user=root;password=2006", Microsoft.EntityFrameworkCore.ServerVersion.Parse("8.0.44-mysql"));
+    {
+        if (!optionsBuilder.IsConfigured)
+        {
+            // The connection string is managed via Program.cs and appsettings.json / .env
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
             .UseCollation("utf8mb4_0900_ai_ci")
             .HasCharSet("utf8mb4");
+
+        modelBuilder.Entity<Favori>(entity =>
+        {
+            entity.HasKey(e => e.IdFavori).HasName("PRIMARY");
+            entity.ToTable("favoris");
+            entity.HasIndex(e => e.IdUtilisateur, "idUtilisateur_favoris");
+            entity.HasIndex(e => e.IdPrestataire, "idPrestataire_favoris");
+
+            entity.Property(e => e.IdFavori).HasColumnName("idFavori");
+            entity.Property(e => e.IdUtilisateur).HasColumnName("idUtilisateur");
+            entity.Property(e => e.IdPrestataire).HasColumnName("idPrestataire");
+            entity.Property(e => e.DateAjout).HasColumnName("dateAjout").HasColumnType("datetime");
+
+            entity.HasOne(d => d.Utilisateur).WithMany()
+                .HasForeignKey(d => d.IdUtilisateur)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_favoris_utilisateur");
+
+            entity.HasOne(d => d.Prestataire).WithMany()
+                .HasForeignKey(d => d.IdPrestataire)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_favoris_prestataire");
+        });
 
         modelBuilder.Entity<Fichier>(entity =>
         {
@@ -86,6 +121,9 @@ public partial class BookifyDbContext : DbContext
             entity.Property(e => e.Bio)
                 .HasColumnType("text")
                 .HasColumnName("bio");
+            entity.Property(e => e.Categorie)
+.HasColumnType("enum('Sante & medical','Beaute & Bien etre','Services profesionnels','Service techniques')")
+                .HasColumnName("categorie");
             entity.Property(e => e.IdUtili).HasColumnName("idUtili");
             entity.Property(e => e.Note)
                 .HasPrecision(2, 1)
@@ -180,7 +218,7 @@ public partial class BookifyDbContext : DbContext
             entity.HasIndex(e => e.IdPres, "idPres");
 
             entity.Property(e => e.IdService).HasColumnName("idService");
-            entity.Property(e => e.Duration).HasColumnName("duration");
+            entity.Property(e => e.Duree).HasColumnName("duration");
             entity.Property(e => e.IdPres).HasColumnName("idPres");
             entity.Property(e => e.Nom)
                 .HasMaxLength(255)
@@ -236,6 +274,83 @@ public partial class BookifyDbContext : DbContext
             entity.Property(e => e.Telephone)
                 .HasMaxLength(20)
                 .HasColumnName("telephone");
+        });
+
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PRIMARY");
+            entity.ToTable("notifications");
+            entity.Property(e => e.Id).HasColumnName("Id");
+            entity.Property(e => e.UtilisateurId).HasColumnName("UtilisateurId");
+            entity.Property(e => e.Title).HasMaxLength(255).HasColumnName("Title");
+            entity.Property(e => e.Message).HasColumnType("text").HasColumnName("Message");
+            entity.Property(e => e.IsRead).HasDefaultValue(false).HasColumnName("IsRead");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP").HasColumnType("datetime").HasColumnName("CreatedAt");
+
+            entity.HasOne(d => d.Utilisateur).WithMany()
+                .HasForeignKey(d => d.UtilisateurId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("notifications_ibfk_1");
+
+            entity.Property(e => e.RendezVousId).HasColumnName("RendezVousId");
+            entity.HasOne(d => d.RendezVous).WithMany()
+                .HasForeignKey(d => d.RendezVousId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<Message>(entity =>
+        {
+            entity.HasKey(e => e.IdMessage).HasName("PRIMARY");
+            entity.ToTable("message");
+
+            entity.Property(e => e.IdMessage).HasColumnName("idMessage");
+            entity.Property(e => e.IdEnvoyeur).HasColumnName("idEnvoyeur");
+            entity.Property(e => e.IdReceveur).HasColumnName("idReceveur");
+            entity.Property(e => e.Contenu)
+                .HasColumnType("text")
+                .HasColumnName("contenu");
+            entity.Property(e => e.EnvoieA)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("datetime")
+                .HasColumnName("envoieA");
+            entity.Property(e => e.Lu)
+                .HasDefaultValue(false)
+                .HasColumnName("lu");
+
+            entity.HasOne(d => d.IdEnvoyeurNavigation)
+                .WithMany()
+                .HasForeignKey(d => d.IdEnvoyeur)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("message_ibfk_1");
+
+            entity.HasOne(d => d.IdReceveurNavigation)
+                .WithMany()
+                .HasForeignKey(d => d.IdReceveur)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("message_ibfk_2");
+        });
+
+        modelBuilder.Entity<Disponibilite>(entity =>
+        {
+            entity.HasKey(e => e.IdDispo).HasName("PRIMARY");
+            entity.ToTable("disponibilite");
+
+            entity.Property(e => e.IdDispo).HasColumnName("idDispo");
+            entity.Property(e => e.IdPres).HasColumnName("idPres");
+            entity.Property(e => e.JourSemaine)
+                .HasColumnType("enum('Lun','Mar','Mer','Jeu','Ven','Sam','Dim')")
+                .HasColumnName("jourSemaine");
+            entity.Property(e => e.HeureDebut).HasColumnName("heureDebut");
+            entity.Property(e => e.HeureFin).HasColumnName("heureFin");
+            entity.Property(e => e.Disponible)
+                .HasDefaultValue(true)
+                .HasColumnName("disponible");
+
+            entity.HasOne(d => d.IdPresNavigation)
+                .WithMany()
+                .HasForeignKey(d => d.IdPres)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("disponibilite_ibfk_1");
         });
 
         OnModelCreatingPartial(modelBuilder);

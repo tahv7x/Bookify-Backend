@@ -1,15 +1,20 @@
 using Bookify_API;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System;
 using Bookify_API.Services;
 using Bookify_API.Models;
+using DotNetEnv;
 
+// Load .env file
+Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Ensure Environment Variables are added to Configuration
+builder.Configuration.AddEnvironmentVariables();
 
 // Add services to the container.
 
@@ -33,6 +38,7 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]))
+        
     };
 });
 //Connection mea la base donnees li keyn F appSetting.json

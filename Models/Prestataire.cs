@@ -13,6 +13,8 @@ public partial class Prestataire
 
     public string? Bio { get; set; }
 
+    public string? Categorie {get;set;}
+
     public decimal? Note { get; set; }
 
     public virtual Utilisateur IdUtiliNavigation { get; set; } = null!;

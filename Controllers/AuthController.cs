@@ -1,4 +1,4 @@
-﻿using BCrypt.Net;
+using BCrypt.Net;
 using Bookify_API.DTOs;
 using Bookify_API.Models;
 using Bookify_API.Services;
@@ -15,7 +15,7 @@ namespace Bookify_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthController : ControllerBase
+    public class AuthController : BaseController
     {
         private readonly BookifyDbContext context;
         private readonly IConfiguration configuration;
@@ -38,7 +38,7 @@ namespace Bookify_API.Controllers
             var claims = new[]
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Email),
-                new Claim("role", user.Role),
+                new Claim(ClaimTypes.Role, user.Role),
                 new Claim("id", user.IdUtilisateur.ToString())
             };
 
@@ -70,8 +70,7 @@ namespace Bookify_API.Controllers
             };
 
             context.Utilisateurs.Add(user);
-            await context.SaveChangesAsync();
-            return Ok("Utilisateur créé avec succès");
+            return await SaveAsyncChanges(context, "Utilisateur créé avec succès");
         }
 
         [HttpPost("login")]
@@ -96,7 +95,8 @@ namespace Bookify_API.Controllers
                     email = user.Email,
                     role = user.Role,
                     adresse = user.Adresse,
-                    telephone = user.Telephone
+                    telephone = user.Telephone,
+                    avatar = user.Avatar
                 }
             });
         }
@@ -119,9 +119,7 @@ namespace Bookify_API.Controllers
                 return BadRequest(new { message = "Le nouveau mot de passe doit contenir au moins 8 caractères." });
 
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NouveauMotDePasse);
-            await context.SaveChangesAsync();
-
-            return Ok(new { message = "Mot de passe modifié avec succès." });
+            return await SaveAsyncChanges(context, new { message = "Mot de passe modifié avec succès." });
         }
 
         [HttpPost("forgot-password")]
@@ -130,7 +128,7 @@ namespace Bookify_API.Controllers
             var user = await context.Utilisateurs.FirstOrDefaultAsync(u => u.Email == dto.Email);
 
             if (user == null)
-                return BadRequest("Email Non trouvé");
+                return BadRequest("Si cet email existe, un code de réinitialisation vous a été envoyé.");
 
             var code = new Random().Next(100000, 999999).ToString();
 
@@ -181,9 +179,7 @@ namespace Bookify_API.Controllers
             user.ResetPasswordCode = null;
             user.ResetCodeExpiry = null;
 
-            await context.SaveChangesAsync();
-
-            return Ok("Mot de passe modifié avec succès");
+            return await SaveAsyncChanges(context, "Mot de passe modifié avec succès");
         }
     }
 }

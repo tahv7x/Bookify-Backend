@@ -1,4 +1,4 @@
-﻿using Bookify_API.DTOs;
+using Bookify_API.DTOs;
 using Bookify_API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +8,7 @@ namespace Bookify_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class RendezVousController : ControllerBase
+    public class RendezVousController : BaseController
     {
         private readonly BookifyDbContext context;
         public RendezVousController(BookifyDbContext context)
@@ -54,9 +54,7 @@ namespace Bookify_API.Controllers
                 DateCreation = DateTime.Now
             };
             context.RendezVous.Add(rdv);
-            await context.SaveChangesAsync();
-
-            return Ok(new { message = "Rendez-vous créé avec succès",rdv.IdRendezVous });
+            return await SaveAsyncChanges(context, new { message = "Rendez-vous créé avec succès", rdv.IdRendezVous });
         }
         [HttpGet("client/{id}")]
         [Authorize(Roles = "CLIENT")]
@@ -92,7 +90,8 @@ namespace Bookify_API.Controllers
                          nomComplet = r.IdPresNavigation.IdUtiliNavigation.NomComplet,
                          email = r.IdPresNavigation.IdUtiliNavigation.Email,
                          telephone = r.IdPresNavigation.IdUtiliNavigation.Telephone,
-                         specialite = r.IdPresNavigation.Speciallite
+                         specialite = r.IdPresNavigation.Speciallite,
+                         avatar = r.IdPresNavigation.IdUtiliNavigation.Avatar
                      },
 
                  })
@@ -131,7 +130,8 @@ namespace Bookify_API.Controllers
                         r.IdUtiliNavigation.IdUtilisateur,
                         r.IdUtiliNavigation.NomComplet,
                         r.IdUtiliNavigation.Email,
-                        r.IdUtiliNavigation.Telephone
+                        r.IdUtiliNavigation.Telephone,
+                        r.IdUtiliNavigation.Avatar
                     }
                 })
                 .ToListAsync();
@@ -155,9 +155,16 @@ namespace Bookify_API.Controllers
                 return BadRequest(new { message = "Ce rendez-vous ne peut plus être modifié" });
             }
             rdv.Statut = "ACCEPTE";
-            await context.SaveChangesAsync();
+            await context.Notifications.AddAsync(new Notification
+            {
+                UtilisateurId = rdv.IdUtili,
+                Title = "Rendez-Vous Accepté",
+                Message = $"Votre rendez-vous du {rdv.DateDebut:dd/MM/yyyy à HH:mm} a été confirmé",
+                IsRead = false,
+                RendezVousId = rdv.IdRendezVous
+            });
 
-            return Ok(new { Message = "Rendez-Vous accepté" });
+            return await SaveAsyncChanges(context, new { Message = "Rendez-Vous accepté" });
         }
 
         [HttpPut("{id}/refuse")]
@@ -176,9 +183,56 @@ namespace Bookify_API.Controllers
                 return BadRequest(new { message = "Ce rendez-vous ne peut plus être modifié" });
 
             rdv.Statut = "REFUSE";
-            await context.SaveChangesAsync();
-            return Ok(new { message = "Rendez-vous refusé" });
+            await context.Notifications.AddAsync(new Notification
+            {
+                UtilisateurId = rdv.IdUtili,
+                Title = "Rendez-Vous Refusé",
+                Message = $"Votre rendez-vous du {rdv.DateDebut:dd/MM/yyyy à HH:mm} a été refusé",
+                IsRead = false,
+                RendezVousId = rdv.IdRendezVous
+            });
+            return await SaveAsyncChanges(context, new { message = "Rendez-vous refusé" });
         }
+
+        [HttpPut("{id}/reschedule")]
+        [Authorize(Roles = "CLIENT")]
+        public async Task<IActionResult> Reschedule(int id, [FromBody] RescheduleDto dto)
+        {
+            var rdv = await context.RendezVous
+                .Include(r => r.IdPresNavigation)
+                    .ThenInclude(p => p.IdUtiliNavigation)
+                .Include(r => r.IdUtiliNavigation)
+                .FirstOrDefaultAsync(r => r.IdRendezVous == id);
+            
+            if (rdv == null) return NotFound(new { message = "Rendez-vous introuvable" });
+
+            var tokenId = int.Parse(User.FindFirst("id")!.Value);
+            if (rdv.IdUtili != tokenId) return Forbid();
+
+            if (rdv.Statut != "EN_ATTENTE")
+                return BadRequest(new { message = "Seuls les rendez-vous en attente peuvent être reprogrammés" });
+
+            if (dto.DateDebut >= dto.DateFin)
+                return BadRequest(new { message = "La date de début doit être avant la date de fin" });
+
+            if (dto.DateDebut < DateTime.Now)
+                return BadRequest(new { message = "La date doit être dans le futur" });
+
+            rdv.DateDebut = dto.DateDebut;
+            rdv.DateFin = dto.DateFin;
+            
+            await context.Notifications.AddAsync(new Notification
+            {
+                UtilisateurId = rdv.IdPresNavigation.IdUtili,
+                Title = "Demande de Rendez-Vous Modifiée",
+                Message = $"Le client {rdv.IdUtiliNavigation.NomComplet} a modifié la date de sa demande de rendez-vous pour le {rdv.DateDebut:dd/MM/yyyy à HH:mm}",
+                IsRead = false,
+                RendezVousId = rdv.IdRendezVous
+            });
+
+            return await SaveAsyncChanges(context, new { message = "Rendez-vous reprogrammé avec succès" });
+        }
+
         [HttpDelete("{id}")]
         [Authorize(Roles = "CLIENT")]
         public async Task<IActionResult> Cancel(int id)
@@ -193,8 +247,15 @@ namespace Bookify_API.Controllers
                 return BadRequest(new { message = "Impossible d'annuler un rendez-vous terminé" });
 
             rdv.Statut = "ANNULE";
-            await context.SaveChangesAsync();
-            return Ok(new { message = "Rendez-vous annulé" });
+            await context.Notifications.AddAsync(new Notification
+            {
+                UtilisateurId = rdv.IdUtili,
+                Title = "Rendez-Vous Annulé",
+                Message = $"Votre rendez-vous du {rdv.DateDebut:dd/MM/yyyy à HH:mm} a été annulé",
+                IsRead = false,
+                RendezVousId = rdv.IdRendezVous
+            });
+            return await SaveAsyncChanges(context, new { message = "Rendez-vous annulé" });
         }
     }
 }

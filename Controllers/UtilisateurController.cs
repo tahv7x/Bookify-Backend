@@ -4,16 +4,15 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Bookify_API.Services;
 namespace Bookify_API.Controllers
 {
     [Route("api/[controller]")]
-    [ApiController]
-    public class UtilisateurController : ControllerBase
+    public class UtilisateurController : BaseController
     {
         private readonly BookifyDbContext context;
         private readonly CloudinaryService cloudinaryService;
-
         public UtilisateurController(BookifyDbContext context, CloudinaryService cloudinaryService)
         {
             this.context = context;
@@ -22,17 +21,17 @@ namespace Bookify_API.Controllers
 
         [HttpGet]
         [Authorize(Roles = "ADMIN")]
-        public IActionResult GetALL()
+        public async Task<IActionResult> GetALL()
         {
-            var users = context.Utilisateurs.ToList();
+            var users = await context.Utilisateurs.ToListAsync();
             return Ok(users);
         }
 
         [HttpGet("{id}")]
         [Authorize]
-        public IActionResult GetById(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var user = context.Utilisateurs.Find(id);
+            var user = await context.Utilisateurs.FindAsync(id);
             if (user == null) return NotFound();
             return Ok(user);
         }
@@ -40,7 +39,7 @@ namespace Bookify_API.Controllers
 
         [HttpPut("{id}")]
         [Authorize]
-        public IActionResult Update(int id, UpdateUtilisateurDto miseUtilisateur)
+        public async Task<IActionResult> Update(int id, UpdateUtilisateurDto miseUtilisateur)
         {
             var userIdFromToken = User.FindFirst("id")?.Value;
             var userRole = User.FindFirst("role")?.Value;
@@ -55,7 +54,7 @@ namespace Bookify_API.Controllers
                 return Forbid();
             }
 
-            var user = context.Utilisateurs.Find(id);
+            var user = await context.Utilisateurs.FindAsync(id);
             if (user == null) return NotFound();
 
             user.NomComplet = miseUtilisateur.NomComplet;
@@ -64,8 +63,8 @@ namespace Bookify_API.Controllers
 
             if (userRole == "ADMIN" && !string.IsNullOrEmpty(miseUtilisateur.Role))
                 user.Role = miseUtilisateur.Role;
-            context.SaveChanges();
-            return Ok(new
+
+            return await SaveAsyncChanges(context, new
             {
                 message = "Profil mis a jour",
                 user
@@ -73,20 +72,20 @@ namespace Bookify_API.Controllers
         }
 
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        [Authorize]
+        public async Task<IActionResult> Delete(int id)
         {
-            var user = context.Utilisateurs.Find(id);
+            var user = await context.Utilisateurs.FindAsync(id);
             if (user == null) return NotFound();
 
             context.Utilisateurs.Remove(user);
-            context.SaveChanges();
 
-            return Ok("Utilisateur Supprimé");
+            return await SaveAsyncChanges(context, new { message = "Utilisateur Supprimé" });
         }
-        //Upload Avatar
+
         [HttpPost("{id}/avatar")]
         [Authorize]
-        public async Task<IActionResult> UploadeAvatar(int id, IFormFile file)
+        public async Task<IActionResult> UploadAvatar(int id, IFormFile File)
         {
             var tokenId = User.FindFirst("id")?.Value;
             if (tokenId == null || tokenId != id.ToString()) return Forbid();
@@ -94,13 +93,13 @@ namespace Bookify_API.Controllers
             var user = await context.Utilisateurs.FindAsync(id);
             if (user == null) return NotFound(new { message = "Utilisateur Introuvable" });
 
-            if (file == null || file.Length == 0) return BadRequest(new { message = "Aucun FIchier" });
+            if (File == null || File.Length == 0) return BadRequest(new { message = "Aucun Fichier" });
             try
             {
                 if(!string.IsNullOrEmpty(user.Avatar)) 
                     await cloudinaryService.DeleteImageAsync(user.Avatar);
 
-                var avatarUrl = await cloudinaryService.UploadImageAsync(file);
+                var avatarUrl = await cloudinaryService.UploadImageAsync(File);
                 user.Avatar = avatarUrl;
 
                 await context.SaveChangesAsync();
@@ -127,7 +126,6 @@ namespace Bookify_API.Controllers
             if (user == null) return NotFound(new { message = "Utilisateur Introuvable" });
 
             if (string.IsNullOrEmpty(user.Avatar)) return BadRequest(new { message = "Aucun avatar a supprimer" });
-
             await cloudinaryService.DeleteImageAsync(user.Avatar);
             user.Avatar = null;
             await context.SaveChangesAsync();
