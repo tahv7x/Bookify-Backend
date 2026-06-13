@@ -1,4 +1,4 @@
-﻿using Bookify_API.DTOs;
+using Bookify_API.DTOs;
 using Bookify_API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -39,7 +39,7 @@ namespace Bookify_API.Controllers
         }
 
         [HttpPut("{id}/read")]
-        [Authorize(Roles = "CLIENT")]
+        [Authorize]
         public async Task<IActionResult> MarkAsRead(int id)
         {
             var tokenID = int.Parse(User.FindFirst("id")?.Value);
@@ -53,7 +53,7 @@ namespace Bookify_API.Controllers
             return await SaveAsyncChanges(context, new { message = "Notification marquée comme lue" });
         }
         [HttpDelete("{id}")]
-        [Authorize(Roles = "CLIENT")]
+        [Authorize]
         public async Task<IActionResult> Delete(int id)
         {
             var tokenId = int.Parse(User.FindFirst("id")!.Value);

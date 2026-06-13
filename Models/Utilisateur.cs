@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace Bookify_API.Models;
@@ -21,15 +21,19 @@ public partial class Utilisateur
 
     public string? Role { get; set; }
 
+    public bool IsBlocked { get; set; }
+
     public string? ResetPasswordCode { get; set; }
 
     public DateTime? ResetCodeExpiry { get; set; }
 
     public DateTime? CreerA { get; set; }
 
-    public virtual ICollection<Fichier> Fichiers { get; set; } = new List<Fichier>();
-
     public virtual ICollection<Prestataire> Prestataires { get; set; } = new List<Prestataire>();
 
     public virtual ICollection<RendezVou> RendezVous { get; set; } = new List<RendezVou>();
+
+    public virtual ICollection<SupportTicket> SupportTickets { get; set; } = new List<SupportTicket>();
+
+    public virtual ICollection<SupportMessage> SupportMessages { get; set; } = new List<SupportMessage>();
 }

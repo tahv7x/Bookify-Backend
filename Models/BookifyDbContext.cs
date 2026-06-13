@@ -16,8 +16,6 @@ public partial class BookifyDbContext : DbContext
     {
     }
 
-    public virtual DbSet<Fichier> Fichiers { get; set; }
-
     public virtual DbSet<Prestataire> Prestataires { get; set; }
 
     public virtual DbSet<Prestatairephoto> Prestatairephotos { get; set; }
@@ -35,6 +33,16 @@ public partial class BookifyDbContext : DbContext
     public virtual DbSet<Disponibilite> Disponibilites { get; set; }
 
     public virtual DbSet<Favori> Favoris { get; set; }
+
+    public virtual DbSet<Avis> Avis { get; set; }
+
+    public virtual DbSet<Categorie> Categories { get; set; }
+
+    public virtual DbSet<SupportTicket> SupportTickets { get; set; }
+
+    public virtual DbSet<SupportMessage> SupportMessages { get; set; }
+
+    public virtual DbSet<Faq> Faqs { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -73,42 +81,6 @@ public partial class BookifyDbContext : DbContext
                 .HasConstraintName("fk_favoris_prestataire");
         });
 
-        modelBuilder.Entity<Fichier>(entity =>
-        {
-            entity.HasKey(e => e.Idfichier).HasName("PRIMARY");
-
-            entity.ToTable("fichier");
-
-            entity.HasIndex(e => e.IdRendezVous, "idRendez_vous");
-
-            entity.HasIndex(e => e.IdUtilisateur, "idUtilisateur");
-
-            entity.Property(e => e.Idfichier).HasColumnName("idfichier");
-            entity.Property(e => e.DateUpload)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("datetime")
-                .HasColumnName("date_upload");
-            entity.Property(e => e.IdRendezVous).HasColumnName("idRendez_vous");
-            entity.Property(e => e.IdUtilisateur).HasColumnName("idUtilisateur");
-            entity.Property(e => e.NomFichier)
-                .HasMaxLength(255)
-                .HasColumnName("nom_fichier");
-            entity.Property(e => e.TypeMime)
-                .HasMaxLength(100)
-                .HasColumnName("type_mime");
-            entity.Property(e => e.Url)
-                .HasColumnType("text")
-                .HasColumnName("url");
-
-            entity.HasOne(d => d.IdRendezVousNavigation).WithMany(p => p.Fichiers)
-                .HasForeignKey(d => d.IdRendezVous)
-                .HasConstraintName("fichier_ibfk_1");
-
-            entity.HasOne(d => d.IdUtilisateurNavigation).WithMany(p => p.Fichiers)
-                .HasForeignKey(d => d.IdUtilisateur)
-                .HasConstraintName("fichier_ibfk_2");
-        });
-
         modelBuilder.Entity<Prestataire>(entity =>
         {
             entity.HasKey(e => e.IdPres).HasName("PRIMARY");
@@ -121,9 +93,11 @@ public partial class BookifyDbContext : DbContext
             entity.Property(e => e.Bio)
                 .HasColumnType("text")
                 .HasColumnName("bio");
-            entity.Property(e => e.Categorie)
-.HasColumnType("enum('Sante & medical','Beaute & Bien etre','Services profesionnels','Service techniques')")
-                .HasColumnName("categorie");
+            entity.Property(e => e.IdCategorie).HasColumnName("idCategorie");
+            entity.HasOne(e => e.IdCategorieNavigation)
+                .WithMany()
+                .HasForeignKey(e => e.IdCategorie)
+                .OnDelete(DeleteBehavior.SetNull);
             entity.Property(e => e.IdUtili).HasColumnName("idUtili");
             entity.Property(e => e.Note)
                 .HasPrecision(2, 1)
@@ -132,6 +106,18 @@ public partial class BookifyDbContext : DbContext
             entity.Property(e => e.Speciallite)
                 .HasMaxLength(100)
                 .HasColumnName("speciallite");
+            entity.Property(e => e.Latitude).HasColumnName("latitude");
+            entity.Property(e => e.Longitude).HasColumnName("longitude");
+
+            entity.Property(e => e.EnLocal)
+                .HasColumnType("tinyint(1)")
+                .HasDefaultValueSql("0")
+                .HasColumnName("enLocal");
+
+            entity.Property(e => e.ADomicile)
+                .HasColumnType("tinyint(1)")
+                .HasDefaultValueSql("0")
+                .HasColumnName("aDomicile");
 
             entity.HasOne(d => d.IdUtiliNavigation).WithMany(p => p.Prestataires)
                 .HasForeignKey(d => d.IdUtili)
@@ -190,7 +176,7 @@ public partial class BookifyDbContext : DbContext
             entity.Property(e => e.IdUtili).HasColumnName("idUtili");
             entity.Property(e => e.Statut)
                 .HasDefaultValueSql("'EN_ATTENTE'")
-                .HasColumnType("enum('EN_ATTENTE','ACCEPTE','REFUSE','ANNULE','TERMINE')")
+                .HasColumnType("enum('EN_ATTENTE','ACCEPTE','REFUSE','ANNULE','TERMINE','A_REPLANIFIER')")
                 .HasColumnName("statut");
 
             entity.HasOne(d => d.IdPresNavigation).WithMany(p => p.RendezVous)
@@ -274,6 +260,10 @@ public partial class BookifyDbContext : DbContext
             entity.Property(e => e.Telephone)
                 .HasMaxLength(20)
                 .HasColumnName("telephone");
+            entity.Property(e => e.IsBlocked)
+                .HasColumnType("tinyint(1)")
+                .HasDefaultValueSql("0")
+                .HasColumnName("isBlocked");
         });
 
         modelBuilder.Entity<Notification>(entity =>
@@ -351,6 +341,98 @@ public partial class BookifyDbContext : DbContext
                 .HasForeignKey(d => d.IdPres)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("disponibilite_ibfk_1");
+        });
+
+        modelBuilder.Entity<Avis>(entity =>
+        {
+            entity.HasKey(e => e.IdAvis).HasName("PRIMARY");
+            entity.ToTable("avis");
+
+            entity.HasIndex(e => e.IdUtilisateur, "idUtilisateur_avis");
+            entity.HasIndex(e => e.IdPrestataire, "idPrestataire_avis");
+            entity.HasIndex(e => e.IdRendezVous, "idRendezVous_avis");
+
+            entity.Property(e => e.IdAvis).HasColumnName("idAvis");
+            entity.Property(e => e.IdUtilisateur).HasColumnName("idUtilisateur");
+            entity.Property(e => e.IdPrestataire).HasColumnName("idPrestataire");
+            entity.Property(e => e.IdRendezVous).HasColumnName("idRendezVous");
+            entity.Property(e => e.Note).HasColumnName("note");
+            entity.Property(e => e.Commentaire).HasColumnType("text").HasColumnName("commentaire");
+            entity.Property(e => e.DateCreation).HasColumnName("dateCreation").HasColumnType("datetime").HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasOne(d => d.Utilisateur).WithMany()
+                .HasForeignKey(d => d.IdUtilisateur)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_avis_utilisateur");
+
+            entity.HasOne(d => d.Prestataire).WithMany()
+                .HasForeignKey(d => d.IdPrestataire)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_avis_prestataire");
+
+            entity.HasOne(d => d.RendezVous).WithMany()
+                .HasForeignKey(d => d.IdRendezVous)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("fk_avis_rendezvous");
+        });
+
+        modelBuilder.Entity<Categorie>(entity =>
+        {
+            entity.HasKey(e => e.IdCategorie).HasName("PRIMARY");
+            entity.ToTable("categorie");
+            entity.HasIndex(e => e.Nom).IsUnique();
+            entity.Property(e => e.IdCategorie).HasColumnName("idCategorie");
+            entity.Property(e => e.Nom).HasMaxLength(100).HasColumnName("nom");
+            entity.Property(e => e.Description).HasColumnType("text").HasColumnName("description");
+            entity.Property(e => e.IsActive).HasColumnType("tinyint(1)").HasDefaultValueSql("1").HasColumnName("isActive");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP").HasColumnType("datetime").HasColumnName("createdAt");
+        });
+
+        modelBuilder.Entity<SupportTicket>(entity =>
+        {
+            entity.HasKey(e => e.IdTicket).HasName("PRIMARY");
+            entity.ToTable("support_ticket");
+            entity.Property(e => e.IdTicket).HasColumnName("idTicket");
+            entity.Property(e => e.IdUtilisateur).HasColumnName("idUtilisateur");
+            entity.Property(e => e.Sujet).HasMaxLength(255).HasColumnName("sujet");
+            entity.Property(e => e.Statut).HasMaxLength(50).HasDefaultValue("Ouvert").HasColumnName("statut");
+            entity.Property(e => e.DateCreation).HasDefaultValueSql("CURRENT_TIMESTAMP").HasColumnType("datetime").HasColumnName("dateCreation");
+
+            entity.HasOne(d => d.Utilisateur).WithMany(p => p.SupportTickets)
+                .HasForeignKey(d => d.IdUtilisateur)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_support_ticket_utilisateur");
+        });
+
+        modelBuilder.Entity<SupportMessage>(entity =>
+        {
+            entity.HasKey(e => e.IdMessage).HasName("PRIMARY");
+            entity.ToTable("support_message");
+            entity.Property(e => e.IdMessage).HasColumnName("idMessage");
+            entity.Property(e => e.IdTicket).HasColumnName("idTicket");
+            entity.Property(e => e.IdEnvoyeur).HasColumnName("idEnvoyeur");
+            entity.Property(e => e.Contenu).HasColumnType("text").HasColumnName("contenu");
+            entity.Property(e => e.DateEnvoie).HasDefaultValueSql("CURRENT_TIMESTAMP").HasColumnType("datetime").HasColumnName("dateEnvoie");
+
+            entity.HasOne(d => d.Ticket).WithMany(p => p.SupportMessages)
+                .HasForeignKey(d => d.IdTicket)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_support_message_ticket");
+
+            entity.HasOne(d => d.Envoyeur).WithMany(p => p.SupportMessages)
+                .HasForeignKey(d => d.IdEnvoyeur)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_support_message_envoyeur");
+        });
+
+        modelBuilder.Entity<Faq>(entity =>
+        {
+            entity.HasKey(e => e.IdFaq).HasName("PRIMARY");
+            entity.ToTable("faq");
+            entity.Property(e => e.IdFaq).HasColumnName("idFaq");
+            entity.Property(e => e.Question).HasColumnType("text").HasColumnName("question");
+            entity.Property(e => e.Reponse).HasColumnType("text").HasColumnName("reponse");
+            entity.Property(e => e.DateCreation).HasDefaultValueSql("CURRENT_TIMESTAMP").HasColumnType("datetime").HasColumnName("dateCreation");
         });
 
         OnModelCreatingPartial(modelBuilder);

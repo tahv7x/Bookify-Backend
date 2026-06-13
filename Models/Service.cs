@@ -19,6 +19,10 @@ public partial class Service
 
     public string UniteDuree { get; set; } = "HEURE";
 
+    public bool IsFullDay { get; set; }
+
+    public string? ImageUrls { get; set; }
+
     public virtual Prestataire IdPresNavigation { get; set; } = null!;
 
     public virtual ICollection<RendezVou> RendezVous { get; set; } = new List<RendezVou>();

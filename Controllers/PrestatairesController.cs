@@ -1,3 +1,4 @@
+using Bookify_API.DTOs;
 using Bookify_API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,11 +18,38 @@ namespace Bookify_API.Controllers
         }
 
         [HttpGet("all")]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] string? q = null, [FromQuery] int? categoryId = null, [FromQuery] string? city = null, [FromQuery] int? minRating = null)
         {
-            var prestataires = await context.Prestataires
+            var query = context.Prestataires
                 .Include(p => p.IdUtiliNavigation)
-                .Include(p => p.Prestatairephotos)
+                .Include(p => p.IdCategorieNavigation)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(q))
+            {
+                var lowerQ = q.ToLower();
+                query = query.Where(p => 
+                    (p.IdUtiliNavigation.NomComplet != null && p.IdUtiliNavigation.NomComplet.ToLower().Contains(lowerQ)) || 
+                    (p.Speciallite != null && p.Speciallite.ToLower().Contains(lowerQ)) || 
+                    p.Services.Any(s => s.Nom != null && s.Nom.ToLower().Contains(lowerQ)));
+            }
+
+            if (categoryId.HasValue && categoryId.Value > 0)
+            {
+                query = query.Where(p => p.IdCategorie == categoryId.Value);
+            }
+
+            if (!string.IsNullOrEmpty(city) && city != "Toutes")
+            {
+                query = query.Where(p => p.IdUtiliNavigation.Adresse.Contains(city));
+            }
+
+            if (minRating.HasValue && minRating.Value > 0)
+            {
+                query = query.Where(p => p.Note >= minRating.Value);
+            }
+
+            var prestataires = await query
                 .Select(p => new
                 {
                     id = p.IdPres,
@@ -31,8 +59,12 @@ namespace Bookify_API.Controllers
                     rating = p.Note,
                     description = p.Bio,
                     avatar = p.IdUtiliNavigation.Avatar,
-                    categorie = p.Categorie,
-                    photos = p.Prestatairephotos.Select(ph => ph.Url).ToList()
+                    categorie = p.IdCategorieNavigation != null ? p.IdCategorieNavigation.Nom : null,
+                    idCategorie = p.IdCategorie,
+                    latitude = p.Latitude,
+                    longitude = p.Longitude,
+                    enLocal = p.EnLocal,
+                    aDomicile = p.ADomicile
                 }).ToListAsync();
             return Ok(prestataires);
         }
@@ -43,7 +75,7 @@ namespace Bookify_API.Controllers
             var prestataire = await context.Prestataires
                 .Include(p => p.IdUtiliNavigation)
                 .Include(p => p.Services)
-                .Include(p => p.Prestatairephotos)
+                .Include(p => p.IdCategorieNavigation)
                 .Where(p => p.IdPres == id)
                 .Select(p => new
                 {
@@ -55,27 +87,26 @@ namespace Bookify_API.Controllers
                     adresse = p.IdUtiliNavigation.Adresse,
                     avatar = p.IdUtiliNavigation.Avatar,
                     specialite = p.Speciallite,
-                    categorie = p.Categorie,
+                    categorie = p.IdCategorieNavigation != null ? p.IdCategorieNavigation.Nom : null,
+                    idCategorie = p.IdCategorie,
                     bio = p.Bio,
                     note = p.Note,
-                    photos = p.Prestatairephotos.Select(ph => ph.Url).ToList(),
+                    latitude = p.Latitude,
+                    longitude = p.Longitude,
+                    enLocal = p.EnLocal,
+                    aDomicile = p.ADomicile,
                     services = p.Services.Select(s => new
                     {
                         id = s.IdService,
                         name = s.Nom,
                         prix = s.Prix,
                         duree = s.Duree,
-                        uniteDuree = s.UniteDuree
+                        uniteDuree = s.UniteDuree,
+                        imageUrls = s.ImageUrls
                     }).ToList()
                 }).FirstOrDefaultAsync();
             if (prestataire == null) return NotFound();
             return Ok(prestataire);
-        }
-
-        [HttpGet("profile/{id}")]
-        public async Task<IActionResult> GetProfile(int id)
-        {
-            return await Get(id);
         }
 
         [HttpGet("mine")]
@@ -106,16 +137,53 @@ namespace Bookify_API.Controllers
 
             myPrestataire.Speciallite = dto.Specialite;
             myPrestataire.Bio = dto.Bio;
-            myPrestataire.Categorie = dto.Categorie;
+            
+            myPrestataire.IdCategorie = dto.IdCategorie;
+
+            if (dto.Latitude.HasValue) myPrestataire.Latitude = dto.Latitude.Value;
+            if (dto.Longitude.HasValue) myPrestataire.Longitude = dto.Longitude.Value;
+            
+            myPrestataire.EnLocal = dto.EnLocal;
+            myPrestataire.ADomicile = dto.ADomicile;
 
             return await SaveAsyncChanges(context, new { message = "Profil mis à jour", user = new {
-                id = utilisateur?.IdUtilisateur,
                 nom = utilisateur?.NomComplet,
                 email = utilisateur?.Email,
-                role = utilisateur?.Role,
-                telephone = utilisateur?.Telephone,
-                avatar = utilisateur?.Avatar
-            }});
+                avatar = utilisateur?.Avatar,
+                specialite = myPrestataire.Speciallite,
+                bio = myPrestataire.Bio,
+                enLocal = myPrestataire.EnLocal,
+                aDomicile = myPrestataire.ADomicile
+            } });
+        }
+
+        [HttpGet("mine/clients")]
+        [Authorize(Roles = "PRESTATAIRE")]
+        public async Task<IActionResult> GetMyClients()
+        {
+            var myUserId = GetUserId();
+            var myPrestataire = await context.Prestataires.FirstOrDefaultAsync(p => p.IdUtili == myUserId);
+            if (myPrestataire == null) return Unauthorized(new { message = "Profil prestataire introuvable." });
+
+            var clients = await context.RendezVous
+                .Where(r => r.IdPres == myPrestataire.IdPres && r.IdUtiliNavigation != null)
+                .GroupBy(r => r.IdUtili)
+                .Select(g => new
+                {
+                    id = g.Key,
+                    name = g.First().IdUtiliNavigation.NomComplet,
+                    email = g.First().IdUtiliNavigation.Email,
+                    phone = g.First().IdUtiliNavigation.Telephone,
+                    city = g.First().IdUtiliNavigation.Adresse,
+                    avatar = g.First().IdUtiliNavigation.Avatar,
+                    initials = !string.IsNullOrEmpty(g.First().IdUtiliNavigation.NomComplet) ? g.First().IdUtiliNavigation.NomComplet.Substring(0, Math.Min(2, g.First().IdUtiliNavigation.NomComplet.Length)) : "CL",
+                    rdvCount = g.Count(),
+                    lastRdv = g.Max(r => r.DateDebut),
+                    rating = 0.0
+                })
+                .ToListAsync();
+
+            return Ok(clients);
         }
 
         [HttpGet("mine/disponibilites")]
@@ -131,8 +199,8 @@ namespace Bookify_API.Controllers
                 .Select(d => new
                 {
                     jourSemaine = d.JourSemaine,
-                    heureDebut = d.HeureDebut.ToString(@"hh\:mm"),
-                    heureFin = d.HeureFin.ToString(@"hh\:mm"),
+                    heureDebut = d.HeureDebut.HasValue ? d.HeureDebut.Value.ToString(@"hh\:mm") : null,
+                    heureFin = d.HeureFin.HasValue ? d.HeureFin.Value.ToString(@"hh\:mm") : null,
                     disponible = d.Disponible
                 })
                 .ToListAsync();
@@ -153,7 +221,18 @@ namespace Bookify_API.Controllers
 
             foreach (var dto in dtos)
             {
-                if (TimeSpan.TryParse(dto.HeureDebut, out var start) && TimeSpan.TryParse(dto.HeureFin, out var end))
+                if (string.IsNullOrEmpty(dto.HeureDebut) || string.IsNullOrEmpty(dto.HeureFin))
+                {
+                    context.Disponibilites.Add(new Disponibilite
+                    {
+                        IdPres = myPrestataire.IdPres,
+                        JourSemaine = dto.JourSemaine,
+                        HeureDebut = null,
+                        HeureFin = null,
+                        Disponible = dto.Disponible
+                    });
+                }
+                else if (TimeSpan.TryParse(dto.HeureDebut, out var start) && TimeSpan.TryParse(dto.HeureFin, out var end))
                 {
                     context.Disponibilites.Add(new Disponibilite
                     {
@@ -173,6 +252,7 @@ namespace Bookify_API.Controllers
         {
             var prestataire = await context.Prestataires
                 .Include(p => p.IdUtiliNavigation)
+                .Include(p => p.IdCategorieNavigation)
                 .OrderBy(r => Guid.NewGuid())
                 .Take(3)
                 .Select(p => new
@@ -184,26 +264,14 @@ namespace Bookify_API.Controllers
                     rating = p.Note,
                     description = p.Bio,
                     avatar = p.IdUtiliNavigation.Avatar,
+                    categorie = p.IdCategorieNavigation != null ? p.IdCategorieNavigation.Nom : null,
+                    idCategorie = p.IdCategorie,
+                    latitude = p.Latitude,
+                    longitude = p.Longitude,
+                    enLocal = p.EnLocal,
+                    aDomicile = p.ADomicile,
                 }).ToListAsync();
             return Ok(prestataire);
         }
-    }
-
-    public class ProviderUpdateDto
-    {
-        public string NomComplet { get; set; }
-        public string Telephone { get; set; }
-        public string Adresse { get; set; }
-        public string Specialite { get; set; }
-        public string Bio { get; set; }
-        public string Categorie { get; set; }
-    }
-
-    public class DispoDto
-    {
-        public string JourSemaine { get; set; }
-        public string HeureDebut { get; set; }
-        public string HeureFin { get; set; }
-        public bool Disponible { get; set; }
     }
 }

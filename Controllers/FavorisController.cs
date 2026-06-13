@@ -81,6 +81,8 @@ namespace Bookify_API.Controllers
             var favorites = await context.Favoris
                 .Include(f => f.Prestataire)
                     .ThenInclude(p => p.IdUtiliNavigation)
+                .Include(f => f.Prestataire)
+                    .ThenInclude(p => p.IdCategorieNavigation)
                 .Where(f => f.IdUtilisateur == userId)
                 .OrderByDescending(f => f.DateAjout)
                 .Select(f => new
@@ -89,7 +91,8 @@ namespace Bookify_API.Controllers
                     nom = f.Prestataire.IdUtiliNavigation.NomComplet,
                     location = f.Prestataire.IdUtiliNavigation.Adresse,
                     specialite = f.Prestataire.Speciallite,
-                    categorie = f.Prestataire.Categorie,
+                    categorie = f.Prestataire.IdCategorieNavigation != null ? f.Prestataire.IdCategorieNavigation.Nom : null,
+                    idCategorie = f.Prestataire.IdCategorie,
                     rating = f.Prestataire.Note,
                     description = f.Prestataire.Bio,
                     avatar = f.Prestataire.IdUtiliNavigation.Avatar,

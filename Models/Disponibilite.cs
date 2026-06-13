@@ -8,11 +8,11 @@ public partial class Disponibilite
 
     public int IdPres { get; set; }
 
-    public string JourSemaine { get; set; } = null!;
+    public string? JourSemaine { get; set; }
 
-    public TimeSpan HeureDebut { get; set; }
+    public TimeSpan? HeureDebut { get; set; }
 
-    public TimeSpan HeureFin { get; set; }
+    public TimeSpan? HeureFin { get; set; }
 
     public bool Disponible { get; set; }
 

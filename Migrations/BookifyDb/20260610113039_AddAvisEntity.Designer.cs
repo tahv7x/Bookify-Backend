@@ -4,6 +4,7 @@ using Bookify_API.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Bookify_API.Migrations.BookifyDb
 {
     [DbContext(typeof(BookifyDbContext))]
-    partial class BookifyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260610113039_AddAvisEntity")]
+    partial class AddAvisEntity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -72,46 +75,6 @@ namespace Bookify_API.Migrations.BookifyDb
                     b.ToTable("avis", (string)null);
                 });
 
-            modelBuilder.Entity("Bookify_API.Models.Categorie", b =>
-                {
-                    b.Property<int>("IdCategorie")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("idCategorie");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("IdCategorie"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasColumnName("createdAt")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text")
-                        .HasColumnName("description");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(1)")
-                        .HasColumnName("isActive")
-                        .HasDefaultValueSql("1");
-
-                    b.Property<string>("Nom")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
-                        .HasColumnName("nom");
-
-                    b.HasKey("IdCategorie")
-                        .HasName("PRIMARY");
-
-                    b.HasIndex("Nom")
-                        .IsUnique();
-
-                    b.ToTable("categorie", (string)null);
-                });
-
             modelBuilder.Entity("Bookify_API.Models.Disponibilite", b =>
                 {
                     b.Property<int>("IdDispo")
@@ -127,11 +90,11 @@ namespace Bookify_API.Migrations.BookifyDb
                         .HasDefaultValue(true)
                         .HasColumnName("disponible");
 
-                    b.Property<TimeSpan?>("HeureDebut")
+                    b.Property<TimeSpan>("HeureDebut")
                         .HasColumnType("time(6)")
                         .HasColumnName("heureDebut");
 
-                    b.Property<TimeSpan?>("HeureFin")
+                    b.Property<TimeSpan>("HeureFin")
                         .HasColumnType("time(6)")
                         .HasColumnName("heureFin");
 
@@ -140,6 +103,7 @@ namespace Bookify_API.Migrations.BookifyDb
                         .HasColumnName("idPres");
 
                     b.Property<string>("JourSemaine")
+                        .IsRequired()
                         .HasColumnType("enum('Lun','Mar','Mer','Jeu','Ven','Sam','Dim')")
                         .HasColumnName("jourSemaine");
 
@@ -149,37 +113,6 @@ namespace Bookify_API.Migrations.BookifyDb
                     b.HasIndex("IdPres");
 
                     b.ToTable("disponibilite", (string)null);
-                });
-
-            modelBuilder.Entity("Bookify_API.Models.Faq", b =>
-                {
-                    b.Property<int>("IdFaq")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("idFaq");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("IdFaq"));
-
-                    b.Property<DateTime?>("DateCreation")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasColumnName("dateCreation")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<string>("Question")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("question");
-
-                    b.Property<string>("Reponse")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("reponse");
-
-                    b.HasKey("IdFaq")
-                        .HasName("PRIMARY");
-
-                    b.ToTable("faq", (string)null);
                 });
 
             modelBuilder.Entity("Bookify_API.Models.Favori", b =>
@@ -211,6 +144,53 @@ namespace Bookify_API.Migrations.BookifyDb
                     b.HasIndex(new[] { "IdUtilisateur" }, "idUtilisateur_favoris");
 
                     b.ToTable("favoris", (string)null);
+                });
+
+            modelBuilder.Entity("Bookify_API.Models.Fichier", b =>
+                {
+                    b.Property<int>("Idfichier")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("idfichier");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Idfichier"));
+
+                    b.Property<DateTime?>("DateUpload")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("date_upload")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int?>("IdRendezVous")
+                        .HasColumnType("int")
+                        .HasColumnName("idRendez_vous");
+
+                    b.Property<int?>("IdUtilisateur")
+                        .HasColumnType("int")
+                        .HasColumnName("idUtilisateur");
+
+                    b.Property<string>("NomFichier")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)")
+                        .HasColumnName("nom_fichier");
+
+                    b.Property<string>("TypeMime")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("type_mime");
+
+                    b.Property<string>("Url")
+                        .HasColumnType("text")
+                        .HasColumnName("url");
+
+                    b.HasKey("Idfichier")
+                        .HasName("PRIMARY");
+
+                    b.HasIndex(new[] { "IdRendezVous" }, "idRendez_vous");
+
+                    b.HasIndex(new[] { "IdUtilisateur" }, "idUtilisateur");
+
+                    b.ToTable("fichier", (string)null);
                 });
 
             modelBuilder.Entity("Bookify_API.Models.Message", b =>
@@ -316,37 +296,17 @@ namespace Bookify_API.Migrations.BookifyDb
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("IdPres"));
 
-                    b.Property<bool>("ADomicile")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(1)")
-                        .HasColumnName("aDomicile")
-                        .HasDefaultValueSql("0");
-
                     b.Property<string>("Bio")
                         .HasColumnType("text")
                         .HasColumnName("bio");
 
-                    b.Property<bool>("EnLocal")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(1)")
-                        .HasColumnName("enLocal")
-                        .HasDefaultValueSql("0");
-
-                    b.Property<int?>("IdCategorie")
-                        .HasColumnType("int")
-                        .HasColumnName("idCategorie");
+                    b.Property<string>("Categorie")
+                        .HasColumnType("enum('Sante & medical','Beaute & Bien etre','Services profesionnels','Service techniques')")
+                        .HasColumnName("categorie");
 
                     b.Property<int>("IdUtili")
                         .HasColumnType("int")
                         .HasColumnName("idUtili");
-
-                    b.Property<double?>("Latitude")
-                        .HasColumnType("double")
-                        .HasColumnName("latitude");
-
-                    b.Property<double?>("Longitude")
-                        .HasColumnType("double")
-                        .HasColumnName("longitude");
 
                     b.Property<decimal?>("Note")
                         .ValueGeneratedOnAdd()
@@ -362,8 +322,6 @@ namespace Bookify_API.Migrations.BookifyDb
 
                     b.HasKey("IdPres")
                         .HasName("PRIMARY");
-
-                    b.HasIndex("IdCategorie");
 
                     b.HasIndex(new[] { "IdUtili" }, "idUtili");
 
@@ -437,12 +395,9 @@ namespace Bookify_API.Migrations.BookifyDb
                         .HasColumnType("int")
                         .HasColumnName("idUtili");
 
-                    b.Property<string>("Lieu")
-                        .HasColumnType("longtext");
-
                     b.Property<string>("Statut")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("enum('EN_ATTENTE','ACCEPTE','REFUSE','ANNULE','TERMINE','A_REPLANIFIER')")
+                        .HasColumnType("enum('EN_ATTENTE','ACCEPTE','REFUSE','ANNULE','TERMINE')")
                         .HasColumnName("statut")
                         .HasDefaultValueSql("'EN_ATTENTE'");
 
@@ -479,12 +434,6 @@ namespace Bookify_API.Migrations.BookifyDb
                         .HasColumnType("int")
                         .HasColumnName("idPres");
 
-                    b.Property<string>("ImageUrls")
-                        .HasColumnType("longtext");
-
-                    b.Property<bool>("IsFullDay")
-                        .HasColumnType("tinyint(1)");
-
                     b.Property<string>("Nom")
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)")
@@ -506,85 +455,6 @@ namespace Bookify_API.Migrations.BookifyDb
                         .HasDatabaseName("idPres1");
 
                     b.ToTable("service", (string)null);
-                });
-
-            modelBuilder.Entity("Bookify_API.Models.SupportMessage", b =>
-                {
-                    b.Property<int>("IdMessage")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("idMessage");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("IdMessage"));
-
-                    b.Property<string>("Contenu")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("contenu");
-
-                    b.Property<DateTime?>("DateEnvoie")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasColumnName("dateEnvoie")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<int>("IdEnvoyeur")
-                        .HasColumnType("int")
-                        .HasColumnName("idEnvoyeur");
-
-                    b.Property<int>("IdTicket")
-                        .HasColumnType("int")
-                        .HasColumnName("idTicket");
-
-                    b.HasKey("IdMessage")
-                        .HasName("PRIMARY");
-
-                    b.HasIndex("IdEnvoyeur");
-
-                    b.HasIndex("IdTicket");
-
-                    b.ToTable("support_message", (string)null);
-                });
-
-            modelBuilder.Entity("Bookify_API.Models.SupportTicket", b =>
-                {
-                    b.Property<int>("IdTicket")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("idTicket");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("IdTicket"));
-
-                    b.Property<DateTime?>("DateCreation")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasColumnName("dateCreation")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<int>("IdUtilisateur")
-                        .HasColumnType("int")
-                        .HasColumnName("idUtilisateur");
-
-                    b.Property<string>("Statut")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
-                        .HasDefaultValue("Ouvert")
-                        .HasColumnName("statut");
-
-                    b.Property<string>("Sujet")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)")
-                        .HasColumnName("sujet");
-
-                    b.HasKey("IdTicket")
-                        .HasName("PRIMARY");
-
-                    b.HasIndex("IdUtilisateur");
-
-                    b.ToTable("support_ticket", (string)null);
                 });
 
             modelBuilder.Entity("Bookify_API.Models.Utilisateur", b =>
@@ -617,12 +487,6 @@ namespace Bookify_API.Migrations.BookifyDb
                         .HasMaxLength(150)
                         .HasColumnType("varchar(150)")
                         .HasColumnName("email");
-
-                    b.Property<bool>("IsBlocked")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(1)")
-                        .HasColumnName("isBlocked")
-                        .HasDefaultValueSql("0");
 
                     b.Property<string>("NomComplet")
                         .IsRequired()
@@ -727,6 +591,23 @@ namespace Bookify_API.Migrations.BookifyDb
                     b.Navigation("Utilisateur");
                 });
 
+            modelBuilder.Entity("Bookify_API.Models.Fichier", b =>
+                {
+                    b.HasOne("Bookify_API.Models.RendezVou", "IdRendezVousNavigation")
+                        .WithMany("Fichiers")
+                        .HasForeignKey("IdRendezVous")
+                        .HasConstraintName("fichier_ibfk_1");
+
+                    b.HasOne("Bookify_API.Models.Utilisateur", "IdUtilisateurNavigation")
+                        .WithMany("Fichiers")
+                        .HasForeignKey("IdUtilisateur")
+                        .HasConstraintName("fichier_ibfk_2");
+
+                    b.Navigation("IdRendezVousNavigation");
+
+                    b.Navigation("IdUtilisateurNavigation");
+                });
+
             modelBuilder.Entity("Bookify_API.Models.Message", b =>
                 {
                     b.HasOne("Bookify_API.Models.Utilisateur", "IdEnvoyeurNavigation")
@@ -769,18 +650,11 @@ namespace Bookify_API.Migrations.BookifyDb
 
             modelBuilder.Entity("Bookify_API.Models.Prestataire", b =>
                 {
-                    b.HasOne("Bookify_API.Models.Categorie", "IdCategorieNavigation")
-                        .WithMany()
-                        .HasForeignKey("IdCategorie")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("Bookify_API.Models.Utilisateur", "IdUtiliNavigation")
                         .WithMany("Prestataires")
                         .HasForeignKey("IdUtili")
                         .IsRequired()
                         .HasConstraintName("prestataire_ibfk_1");
-
-                    b.Navigation("IdCategorieNavigation");
 
                     b.Navigation("IdUtiliNavigation");
                 });
@@ -833,39 +707,6 @@ namespace Bookify_API.Migrations.BookifyDb
                     b.Navigation("IdPresNavigation");
                 });
 
-            modelBuilder.Entity("Bookify_API.Models.SupportMessage", b =>
-                {
-                    b.HasOne("Bookify_API.Models.Utilisateur", "Envoyeur")
-                        .WithMany("SupportMessages")
-                        .HasForeignKey("IdEnvoyeur")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_support_message_envoyeur");
-
-                    b.HasOne("Bookify_API.Models.SupportTicket", "Ticket")
-                        .WithMany("SupportMessages")
-                        .HasForeignKey("IdTicket")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_support_message_ticket");
-
-                    b.Navigation("Envoyeur");
-
-                    b.Navigation("Ticket");
-                });
-
-            modelBuilder.Entity("Bookify_API.Models.SupportTicket", b =>
-                {
-                    b.HasOne("Bookify_API.Models.Utilisateur", "Utilisateur")
-                        .WithMany("SupportTickets")
-                        .HasForeignKey("IdUtilisateur")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_support_ticket_utilisateur");
-
-                    b.Navigation("Utilisateur");
-                });
-
             modelBuilder.Entity("Bookify_API.Models.Prestataire", b =>
                 {
                     b.Navigation("Prestatairephotos");
@@ -875,25 +716,23 @@ namespace Bookify_API.Migrations.BookifyDb
                     b.Navigation("Services");
                 });
 
+            modelBuilder.Entity("Bookify_API.Models.RendezVou", b =>
+                {
+                    b.Navigation("Fichiers");
+                });
+
             modelBuilder.Entity("Bookify_API.Models.Service", b =>
                 {
                     b.Navigation("RendezVous");
                 });
 
-            modelBuilder.Entity("Bookify_API.Models.SupportTicket", b =>
-                {
-                    b.Navigation("SupportMessages");
-                });
-
             modelBuilder.Entity("Bookify_API.Models.Utilisateur", b =>
                 {
+                    b.Navigation("Fichiers");
+
                     b.Navigation("Prestataires");
 
                     b.Navigation("RendezVous");
-
-                    b.Navigation("SupportMessages");
-
-                    b.Navigation("SupportTickets");
                 });
 #pragma warning restore 612, 618
         }

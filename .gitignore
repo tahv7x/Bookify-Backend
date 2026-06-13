@@ -4,3 +4,7 @@ obj/
 *.csx
 .vs/
 *.user
+*.txt
+*.sql
+appsettings.json
+appsettings.Development.json

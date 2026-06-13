@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Mail;
 
 namespace Bookify_API.Services
@@ -170,6 +170,134 @@ namespace Bookify_API.Services
 
                       <p style=""margin:24px 0 0;font-family:Poppins,sans-serif;font-size:12px;color:#9CA3AF;text-align:center;"">
                         Trouvez le bon professionnel en un clic — <span style=""color:#1A6FD1;font-weight:600;"">Bookify</span>
+                      </p>
+
+                    </td></tr>
+                  </table>
+                </body>
+                </html>";
+        }
+
+        public string BuildRendezVousEmail(
+            string userName, 
+            string headerTitle, 
+            string statusBadgeText, 
+            string statusBadgeColor, 
+            string introText, 
+            string serviceName, 
+            string partyLabel, 
+            string partyName, 
+            string dateText, 
+            string dateRangeText,
+            string footerText = "Trouvez le bon professionnel en un clic — Bookify"
+        )
+        {
+            return $@"<!DOCTYPE html>
+                <html lang=""fr"">
+                <head>
+                  <meta charset=""UTF-8""/>
+                  <meta name=""viewport"" content=""width=device-width, initial-scale=1.0""/>
+                  <title>{headerTitle} - Bookify</title>
+                  <link rel=""preconnect"" href=""https://fonts.googleapis.com""/>
+                  <link rel=""preconnect"" href=""https://fonts.gstatic.com"" crossorigin=""anonymous""/>
+                  <link href=""https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Fraunces:wght@700;800&display=swap"" rel=""stylesheet""/>
+                </head>
+                <body style=""margin:0;padding:0;background-color:#F4F7FE;font-family:Poppins,-apple-system,BlinkMacSystemFont,sans-serif;"">
+                  <table width=""100%"" cellpadding=""0"" cellspacing=""0"" border=""0"" style=""background-color:#F4F7FE;padding:48px 16px;"">
+                    <tr><td align=""center"">
+
+                      <table width=""600"" cellpadding=""0"" cellspacing=""0"" border=""0""
+                        style=""max-width:600px;width:100%;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 8px 40px rgba(0,74,150,0.10);"">
+
+                        <!-- HERO HEADER -->
+                        <tr>
+                          <td style=""background:linear-gradient(135deg,#004a96 0%,#1A6FD1 100%);padding:44px 48px 40px;"">
+                            <table width=""100%"" cellpadding=""0"" cellspacing=""0"" border=""0"">
+                              <tr>
+                                <td align=""center"" style=""padding-bottom:24px;"">
+                                    <img src=""https://res.cloudinary.com/dphsbn5ce/image/upload/v1773109425/LogoW_ojz4fo.png"" alt=""Bookify"" width=""240"" style=""display:block;width:240px;max-width:240px;height:auto;""/>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td align=""center"" style=""padding-bottom:28px;"">
+                                  <div style=""width:60px;height:3px;background:rgba(255,255,255,0.30);border-radius:2px;margin:0 auto;""></div>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td align=""center"">
+                                  <p style=""margin:0 0 8px;font-family:Poppins,sans-serif;font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);letter-spacing:3px;text-transform:uppercase;"">Notification de Rendez-vous</p>
+                                  <h1 style=""margin:0;font-family:Fraunces,Georgia,serif;font-size:32px;font-weight:800;color:#ffffff;line-height:1.2;text-align:center;"">
+                                    {headerTitle}
+                                  </h1>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+
+                        <!-- BODY -->
+                        <tr>
+                          <td style=""padding:48px 48px 36px;"">
+                            <p style=""margin:0 0 10px;font-family:Poppins,sans-serif;font-size:16px;color:#374151;line-height:1.7;"">
+                              Bonjour <strong style=""color:#004a96;font-weight:700;"">{userName}</strong> 👋
+                            </p>
+                            <p style=""margin:0 0 30px;font-family:Poppins,sans-serif;font-size:15px;color:#6B7280;line-height:1.8;"">
+                              {introText}
+                            </p>
+
+                            <!-- DETAILS BOX -->
+                            <table width=""100%"" cellpadding=""0"" cellspacing=""0"" border=""0"" style=""margin-bottom:36px;"">
+                              <tr>
+                                <td style=""background:linear-gradient(135deg,#EFF6FF 0%,#DBEAFE 100%);border:2px solid #BFDBFE;border-radius:20px;padding:30px 24px;"">
+                                  <p style=""margin:0 0 12px;font-family:Poppins,sans-serif;font-size:11px;font-weight:600;color:#6B7280;letter-spacing:3px;text-transform:uppercase;"">Statut</p>
+                                  <table cellpadding=""0"" cellspacing=""0"" border=""0"" style=""margin-bottom:20px;""><tr>
+                                    <td style=""background:{statusBadgeColor};border-radius:20px;padding:6px 16px;"">
+                                      <span style=""font-family:Poppins,sans-serif;font-size:13px;font-weight:700;color:#ffffff;text-transform:uppercase;"">{statusBadgeText}</span>
+                                    </td>
+                                  </tr></table>
+
+                                  <p style=""margin:0 0 4px;font-family:Poppins,sans-serif;font-size:11px;font-weight:600;color:#6B7280;letter-spacing:3px;text-transform:uppercase;"">Prestation</p>
+                                  <p style=""margin:0 0 16px;font-family:Poppins,sans-serif;font-size:18px;font-weight:700;color:#1e293b;"">{serviceName}</p>
+
+                                  <p style=""margin:0 0 4px;font-family:Poppins,sans-serif;font-size:11px;font-weight:600;color:#6B7280;letter-spacing:3px;text-transform:uppercase;"">{partyLabel}</p>
+                                  <p style=""margin:0 0 16px;font-family:Poppins,sans-serif;font-size:18px;font-weight:700;color:#1e293b;"">{partyName}</p>
+
+                                  <p style=""margin:0 0 4px;font-family:Poppins,sans-serif;font-size:11px;font-weight:600;color:#6B7280;letter-spacing:3px;text-transform:uppercase;"">Date &amp; Heure</p>
+                                  <p style=""margin:0;font-family:Poppins,sans-serif;font-size:18px;font-weight:700;color:#1e293b;"">📅 {dateText} a {dateRangeText}</p>
+                                </td>
+                              </tr>
+                            </table>
+
+                            <p style=""margin:0;font-family:Poppins,sans-serif;font-size:14px;color:#6B7280;line-height:1.7;"">
+                              Vous pouvez consulter et gerer tous vos rendez-vous en vous connectant a votre espace sur notre site web.
+                            </p>
+                          </td>
+                        </tr>
+
+                        <!-- DIVIDER -->
+                        <tr><td style=""padding:0 48px;""><div style=""height:1px;background:#F3F4F6;""></div></td></tr>
+
+                        <!-- FOOTER -->
+                        <tr>
+                          <td style=""padding:26px 48px 36px;"">
+                            <table width=""100%"" cellpadding=""0"" cellspacing=""0"" border=""0""><tr>
+                              <td>
+                                <p style=""margin:0 0 4px;font-family:Fraunces,Georgia,serif;font-size:15px;font-weight:700;color:#004a96;letter-spacing:1px;"">BOOKIFY</p>
+                                <p style=""margin:0;font-family:Poppins,sans-serif;font-size:12px;color:#9CA3AF;"">Reservation simplifiee · 2026 · Ne pas repondre a cet email</p>
+                              </td>
+                              <td align=""right"">
+                                <table cellpadding=""0"" cellspacing=""0"" border=""0""><tr>
+                                  <td style=""background:#EFF6FF;border-radius:8px;padding:6px 13px;""><span style=""font-family:Poppins,sans-serif;font-size:11px;font-weight:600;color:#1A6FD1;"">🔒 Securise</span></td>
+                                </tr></table>
+                              </td>
+                            </tr></table>
+                          </td>
+                        </tr>
+
+                      </table>
+
+                      <p style=""margin:24px 0 0;font-family:Poppins,sans-serif;font-size:12px;color:#9CA3AF;text-align:center;"">
+                        {footerText}
                       </p>
 
                     </td></tr>

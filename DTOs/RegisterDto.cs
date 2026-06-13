@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace Bookify_API.DTOs
 {
@@ -12,5 +12,9 @@ namespace Bookify_API.DTOs
         [MinLength(8)]
         public string Password { get; set; }
         public string Role { get; set; }
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+        public bool? EnLocal { get; set; }
+        public bool? ADomicile { get; set; }
     }
 }

@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Bookify_API.Migrations
 {
-    [DbContext(typeof(AppDbContext))]
+    // [DbContext(typeof(BookifyDbContext))]
     [Migration("20260223124902_InitialCreate")]
     partial class InitialCreate
     {

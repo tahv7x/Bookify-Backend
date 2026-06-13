@@ -4,6 +4,7 @@ using Bookify_API.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Bookify_API.Migrations.BookifyDb
 {
     [DbContext(typeof(BookifyDbContext))]
-    partial class BookifyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260613011128_SyncSchema")]
+    partial class SyncSchema
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -149,37 +152,6 @@ namespace Bookify_API.Migrations.BookifyDb
                     b.HasIndex("IdPres");
 
                     b.ToTable("disponibilite", (string)null);
-                });
-
-            modelBuilder.Entity("Bookify_API.Models.Faq", b =>
-                {
-                    b.Property<int>("IdFaq")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("idFaq");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("IdFaq"));
-
-                    b.Property<DateTime?>("DateCreation")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasColumnName("dateCreation")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<string>("Question")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("question");
-
-                    b.Property<string>("Reponse")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("reponse");
-
-                    b.HasKey("IdFaq")
-                        .HasName("PRIMARY");
-
-                    b.ToTable("faq", (string)null);
                 });
 
             modelBuilder.Entity("Bookify_API.Models.Favori", b =>
@@ -508,85 +480,6 @@ namespace Bookify_API.Migrations.BookifyDb
                     b.ToTable("service", (string)null);
                 });
 
-            modelBuilder.Entity("Bookify_API.Models.SupportMessage", b =>
-                {
-                    b.Property<int>("IdMessage")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("idMessage");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("IdMessage"));
-
-                    b.Property<string>("Contenu")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("contenu");
-
-                    b.Property<DateTime?>("DateEnvoie")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasColumnName("dateEnvoie")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<int>("IdEnvoyeur")
-                        .HasColumnType("int")
-                        .HasColumnName("idEnvoyeur");
-
-                    b.Property<int>("IdTicket")
-                        .HasColumnType("int")
-                        .HasColumnName("idTicket");
-
-                    b.HasKey("IdMessage")
-                        .HasName("PRIMARY");
-
-                    b.HasIndex("IdEnvoyeur");
-
-                    b.HasIndex("IdTicket");
-
-                    b.ToTable("support_message", (string)null);
-                });
-
-            modelBuilder.Entity("Bookify_API.Models.SupportTicket", b =>
-                {
-                    b.Property<int>("IdTicket")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("idTicket");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("IdTicket"));
-
-                    b.Property<DateTime?>("DateCreation")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasColumnName("dateCreation")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<int>("IdUtilisateur")
-                        .HasColumnType("int")
-                        .HasColumnName("idUtilisateur");
-
-                    b.Property<string>("Statut")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
-                        .HasDefaultValue("Ouvert")
-                        .HasColumnName("statut");
-
-                    b.Property<string>("Sujet")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)")
-                        .HasColumnName("sujet");
-
-                    b.HasKey("IdTicket")
-                        .HasName("PRIMARY");
-
-                    b.HasIndex("IdUtilisateur");
-
-                    b.ToTable("support_ticket", (string)null);
-                });
-
             modelBuilder.Entity("Bookify_API.Models.Utilisateur", b =>
                 {
                     b.Property<int>("IdUtilisateur")
@@ -833,39 +726,6 @@ namespace Bookify_API.Migrations.BookifyDb
                     b.Navigation("IdPresNavigation");
                 });
 
-            modelBuilder.Entity("Bookify_API.Models.SupportMessage", b =>
-                {
-                    b.HasOne("Bookify_API.Models.Utilisateur", "Envoyeur")
-                        .WithMany("SupportMessages")
-                        .HasForeignKey("IdEnvoyeur")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_support_message_envoyeur");
-
-                    b.HasOne("Bookify_API.Models.SupportTicket", "Ticket")
-                        .WithMany("SupportMessages")
-                        .HasForeignKey("IdTicket")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_support_message_ticket");
-
-                    b.Navigation("Envoyeur");
-
-                    b.Navigation("Ticket");
-                });
-
-            modelBuilder.Entity("Bookify_API.Models.SupportTicket", b =>
-                {
-                    b.HasOne("Bookify_API.Models.Utilisateur", "Utilisateur")
-                        .WithMany("SupportTickets")
-                        .HasForeignKey("IdUtilisateur")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_support_ticket_utilisateur");
-
-                    b.Navigation("Utilisateur");
-                });
-
             modelBuilder.Entity("Bookify_API.Models.Prestataire", b =>
                 {
                     b.Navigation("Prestatairephotos");
@@ -880,20 +740,11 @@ namespace Bookify_API.Migrations.BookifyDb
                     b.Navigation("RendezVous");
                 });
 
-            modelBuilder.Entity("Bookify_API.Models.SupportTicket", b =>
-                {
-                    b.Navigation("SupportMessages");
-                });
-
             modelBuilder.Entity("Bookify_API.Models.Utilisateur", b =>
                 {
                     b.Navigation("Prestataires");
 
                     b.Navigation("RendezVous");
-
-                    b.Navigation("SupportMessages");
-
-                    b.Navigation("SupportTickets");
                 });
 #pragma warning restore 612, 618
         }

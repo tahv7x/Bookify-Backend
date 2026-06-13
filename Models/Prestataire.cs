@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace Bookify_API.Models;
@@ -13,9 +13,19 @@ public partial class Prestataire
 
     public string? Bio { get; set; }
 
-    public string? Categorie {get;set;}
+    public int? IdCategorie {get;set;}
 
     public decimal? Note { get; set; }
+
+    public double? Latitude { get; set; }
+
+    public double? Longitude { get; set; }
+
+    public bool EnLocal { get; set; }
+
+    public bool ADomicile { get; set; }
+
+    public virtual Categorie? IdCategorieNavigation { get; set; }
 
     public virtual Utilisateur IdUtiliNavigation { get; set; } = null!;
 

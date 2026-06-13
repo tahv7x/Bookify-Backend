@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Bookify_API.Migrations
 {
-    [DbContext(typeof(AppDbContext))]
+    // [DbContext(typeof(BookifyDbContext))]
     partial class AppDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
