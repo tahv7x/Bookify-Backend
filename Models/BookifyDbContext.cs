@@ -111,12 +111,10 @@ public partial class BookifyDbContext : DbContext
 
             entity.Property(e => e.EnLocal)
                 .HasColumnType("tinyint(1)")
-                .HasDefaultValueSql("0")
                 .HasColumnName("enLocal");
 
             entity.Property(e => e.ADomicile)
                 .HasColumnType("tinyint(1)")
-                .HasDefaultValueSql("0")
                 .HasColumnName("aDomicile");
 
             entity.HasOne(d => d.IdUtiliNavigation).WithMany(p => p.Prestataires)
@@ -262,7 +260,6 @@ public partial class BookifyDbContext : DbContext
                 .HasColumnName("telephone");
             entity.Property(e => e.IsBlocked)
                 .HasColumnType("tinyint(1)")
-                .HasDefaultValueSql("0")
                 .HasColumnName("isBlocked");
         });
 
@@ -384,7 +381,7 @@ public partial class BookifyDbContext : DbContext
             entity.Property(e => e.IdCategorie).HasColumnName("idCategorie");
             entity.Property(e => e.Nom).HasMaxLength(100).HasColumnName("nom");
             entity.Property(e => e.Description).HasColumnType("text").HasColumnName("description");
-            entity.Property(e => e.IsActive).HasColumnType("tinyint(1)").HasDefaultValueSql("1").HasColumnName("isActive");
+            entity.Property(e => e.IsActive).HasColumnType("tinyint(1)").HasColumnName("isActive");
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP").HasColumnType("datetime").HasColumnName("createdAt");
         });
 

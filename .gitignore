@@ -1,10 +1,43 @@
+# Build outputs
 bin/
 obj/
-.env
-*.csx
+
+# IDE & editor files
 .vs/
 *.user
-*.txt
-*.sql
+*.suo
+*.csx
+*.cache
+*.DotSettings
+.idea/
+*.swp
+*~
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
 appsettings.json
 appsettings.Development.json
+appsettings.*.json
+!appsettings.example.json
+
+# Launch settings (local dev only)
+Properties/
+
+# HTTP test files
+*.http
+
+# OS files
+Thumbs.db
+.DS_Store
+Desktop.ini
+
+# Logs & temp
+*.log
+*.tmp
+*.temp
+
+# Text & SQL (not needed in repo)
+*.txt
+*.sql

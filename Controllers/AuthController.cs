@@ -66,7 +66,8 @@ namespace Bookify_API.Controllers
                 Telephone = dto.Telephone,
                 Adresse = dto.Adresse,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-                Role = dto.Role
+                Role = dto.Role,
+                IsBlocked = false
             };
             context.Utilisateurs.Add(user);
 
@@ -116,7 +117,8 @@ namespace Bookify_API.Controllers
                     role = user.Role,
                     adresse = user.Adresse,
                     telephone = user.Telephone,
-                    avatar = user.Avatar
+                    avatar = user.Avatar,
+                    isBlocked = user.IsBlocked
                 }
             });
         }
