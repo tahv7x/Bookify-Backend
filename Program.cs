@@ -57,7 +57,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowReact",
         policy =>
         {
-            policy.WithOrigins("http://localhost:5173")
+            policy.WithOrigins(builder.Configuration["host"])
             .AllowAnyHeader().AllowAnyMethod();
         });
 });
