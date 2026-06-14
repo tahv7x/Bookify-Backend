@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using System;
 using Bookify_API.Services;
 using Bookify_API.Models;
 using DotNetEnv;
@@ -17,10 +16,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 
 // Add services to the container.
-
 builder.Services.AddControllers();
 
-//JWT 
+// JWT Authentication
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -37,11 +35,13 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]))
-        
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(jwtSettings["Key"])
+        )
     };
 });
-//Connection mea la base donnees li keyn F appSetting.json
+
+// Database Connection
 builder.Services.AddDbContext<BookifyDbContext>(options =>
     options.UseMySql(
         builder.Configuration.GetConnectionString("DefaultConnection"),
@@ -50,23 +50,30 @@ builder.Services.AddDbContext<BookifyDbContext>(options =>
         )
     )
 );
+
+// Services
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<CloudinaryService>();
+
+// CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowReact",
-        policy =>
-        {
-            policy.WithOrigins(builder.Configuration["host"])
-            .AllowAnyHeader().AllowAnyMethod();
-        });
+    options.AddPolicy("AllowReact", policy =>
+    {
+        policy.WithOrigins(
+                "https://bookify-frontend-beta.vercel.app",
+                "http://localhost:5173",
+                "http://localhost:3000"
+              )
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
 });
 
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -78,5 +85,4 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
 app.Run();
