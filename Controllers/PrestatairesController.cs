@@ -18,7 +18,7 @@ namespace Bookify_API.Controllers
         }
 
         [HttpGet("all")]
-        public async Task<IActionResult> GetAll([FromQuery] string? q = null, [FromQuery] int? categoryId = null, [FromQuery] string? city = null, [FromQuery] int? minRating = null)
+        public async Task<IActionResult> GetAll([FromQuery] string? q = null, [FromQuery] int? categoryId = null, [FromQuery] string? category = null, [FromQuery] string? city = null, [FromQuery] int? minRating = null)
         {
             var query = context.Prestataires
                 .Include(p => p.IdUtiliNavigation)
@@ -37,6 +37,11 @@ namespace Bookify_API.Controllers
             if (categoryId.HasValue && categoryId.Value > 0)
             {
                 query = query.Where(p => p.IdCategorie == categoryId.Value);
+            }
+            else if (!string.IsNullOrEmpty(category) && category != "Tous" && category != "Toutes")
+            {
+                var lowerCategory = category.ToLower();
+                query = query.Where(p => p.IdCategorieNavigation != null && p.IdCategorieNavigation.Nom.ToLower() == lowerCategory);
             }
 
             if (!string.IsNullOrEmpty(city) && city != "Toutes")
@@ -138,7 +143,45 @@ namespace Bookify_API.Controllers
             myPrestataire.Speciallite = dto.Specialite;
             myPrestataire.Bio = dto.Bio;
             
-            myPrestataire.IdCategorie = dto.IdCategorie;
+            if (dto.IdCategorie.HasValue && dto.IdCategorie.Value > 0)
+            {
+                myPrestataire.IdCategorie = dto.IdCategorie.Value;
+            }
+            else if (!string.IsNullOrEmpty(dto.Categorie))
+            {
+                var search = dto.Categorie.ToLower()
+                    .Replace("é", "e").Replace("è", "e").Replace("ê", "e")
+                    .Replace("á", "a").Replace("à", "a").Replace("â", "a")
+                    .Replace("-", " ").Replace("&", "").Replace(" ", "");
+                    
+                var allCats = await context.Categories.ToListAsync();
+                var cat = allCats.FirstOrDefault(c => {
+                    var cName = c.Nom.ToLower()
+                        .Replace("é", "e").Replace("è", "e").Replace("ê", "e")
+                        .Replace("á", "a").Replace("à", "a").Replace("â", "a")
+                        .Replace("-", " ").Replace("&", "").Replace(" ", "");
+                        
+                    if (search.Contains("sante") && cName.Contains("sante")) return true;
+                    if (search.Contains("beaute") && cName.Contains("beaute")) return true;
+                    if (search.Contains("profes") && cName.Contains("profes")) return true;
+                    if (search.Contains("technique") && cName.Contains("technique")) return true;
+                    
+                    return cName == search;
+                });
+
+                if (cat != null)
+                {
+                    myPrestataire.IdCategorie = cat.IdCategorie;
+                }
+                else
+                {
+                    myPrestataire.IdCategorie = null;
+                }
+            }
+            else
+            {
+                myPrestataire.IdCategorie = null;
+            }
 
             if (dto.Latitude.HasValue) myPrestataire.Latitude = dto.Latitude.Value;
             if (dto.Longitude.HasValue) myPrestataire.Longitude = dto.Longitude.Value;

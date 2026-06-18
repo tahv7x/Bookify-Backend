@@ -104,7 +104,7 @@ public partial class BookifyDbContext : DbContext
                 .HasDefaultValueSql("'0.0'")
                 .HasColumnName("note");
             entity.Property(e => e.Speciallite)
-                .HasMaxLength(100)
+                .HasMaxLength(255)
                 .HasColumnName("speciallite");
             entity.Property(e => e.Latitude).HasColumnName("latitude");
             entity.Property(e => e.Longitude).HasColumnName("longitude");

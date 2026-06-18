@@ -288,7 +288,7 @@ namespace Bookify_API.Controllers
                 DateCreation = DateTime.Now
             };
             context.RendezVous.Add(rdv);
-            var result = await SaveAsyncChanges(context, new { message = "Rendez-vous créé avec succès", rdv.IdRendezVous });
+            var result = await SaveAsyncChanges(context, () => new { message = "Rendez-vous créé avec succès", rdv.IdRendezVous });
             if (result is OkObjectResult && client != null && prestataire?.IdUtiliNavigation != null)
             {
                 try

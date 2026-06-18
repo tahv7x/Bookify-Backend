@@ -40,5 +40,26 @@ namespace Bookify_API.Controllers
                 return StatusCode(500, new { message = "Erreur serveur", detail = ex.Message });
             }
         }
+
+        protected async Task<IActionResult> SaveAsyncChanges(BookifyDbContext context, Func<object> payloadProvider)
+        {
+            try
+            {
+                await context.SaveChangesAsync();
+                return Ok(payloadProvider());
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                return Conflict(new { message = "Conflit de concurrence", detail = ex.Message });
+            }
+            catch (DbUpdateException ex)
+            {
+                return BadRequest(new { message = "Erreur de mise à jour en base", detail = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Erreur serveur", detail = ex.Message });
+            }
+        }
     }
 }

@@ -61,10 +61,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowReact", policy =>
     {
         policy.WithOrigins(
-                "https://bookify-frontend-beta.vercel.app",
-                "http://localhost:5173",
-                "http://localhost:3000"
-              )
+                "http://localhost:5173"
+            )
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -85,4 +83,5 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
 app.Run();

@@ -21,7 +21,7 @@ namespace Bookify_API.Controllers
         }
 
         [HttpGet("explore")]
-        public async Task<IActionResult> Explore([FromQuery] string? q = null, [FromQuery] int? categoryId = null, [FromQuery] string? city = null, [FromQuery] int? minRating = null)
+        public async Task<IActionResult> Explore([FromQuery] string? q = null, [FromQuery] int? categoryId = null, [FromQuery] string? category = null, [FromQuery] string? city = null, [FromQuery] int? minRating = null)
         {
             var query = context.Services
                 .Include(s => s.IdPresNavigation)
@@ -43,6 +43,12 @@ namespace Bookify_API.Controllers
             {
                 query = query.Where(s => s.IdPresNavigation.IdCategorie == categoryId.Value);
             }
+            else if (!string.IsNullOrEmpty(category) && category != "Tous" && category != "Toutes")
+            {
+                var lowerCategory = category.ToLower();
+                query = query.Where(s => s.IdPresNavigation.IdCategorieNavigation != null && s.IdPresNavigation.IdCategorieNavigation.Nom.ToLower() == lowerCategory);
+            }
+
 
             if (!string.IsNullOrEmpty(city) && city != "Toutes")
             {
@@ -179,7 +185,7 @@ namespace Bookify_API.Controllers
             };
 
             context.Services.Add(service);
-            return await SaveAsyncChanges(context, new { message = "Service ajouté avec succès.", serviceId = service.IdService });
+            return await SaveAsyncChanges(context, () => new { message = "Service ajouté avec succès.", serviceId = service.IdService });
         }
 
         [HttpPut("{id}")]

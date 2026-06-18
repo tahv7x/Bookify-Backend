@@ -8,9 +8,11 @@ namespace Bookify_API.DTOs
         public string? Specialite { get; set; }
         public string? Bio { get; set; }
         public int? IdCategorie { get; set; }
+        public string? Categorie { get; set; }
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
         public bool EnLocal { get; set; }
         public bool ADomicile { get; set; }
     }
 }
+
