@@ -46,7 +46,7 @@ namespace Bookify_API.Controllers
 
             if (!string.IsNullOrEmpty(city) && city != "Toutes")
             {
-                query = query.Where(p => p.IdUtiliNavigation.Adresse.Contains(city));
+                query = query.Where(p => p.IdUtiliNavigation.Adresse != null && p.IdUtiliNavigation.Adresse.Contains(city));
             }
 
             if (minRating.HasValue && minRating.Value > 0)
@@ -61,7 +61,9 @@ namespace Bookify_API.Controllers
                     nom = p.IdUtiliNavigation.NomComplet,
                     location = p.IdUtiliNavigation.Adresse,
                     specialite = p.Speciallite,
-                    rating = p.Note,
+                    rating = context.Avis.Where(a => a.IdPrestataire == p.IdPres).Any()
+                        ? Math.Round(context.Avis.Where(a => a.IdPrestataire == p.IdPres).Average(a => (double)a.Note), 1)
+                        : (double?)p.Note ?? 0,
                     description = p.Bio,
                     avatar = p.IdUtiliNavigation.Avatar,
                     categorie = p.IdCategorieNavigation != null ? p.IdCategorieNavigation.Nom : null,
@@ -135,6 +137,12 @@ namespace Bookify_API.Controllers
             var utilisateur = await context.Utilisateurs.FindAsync(myUserId);
             if (utilisateur != null)
             {
+                if (!string.IsNullOrEmpty(dto.Telephone) && 
+                    dto.Telephone != utilisateur.Telephone && 
+                    await context.Utilisateurs.AnyAsync(u => u.Telephone == dto.Telephone && u.IdUtilisateur != myUserId))
+                {
+                    return BadRequest("Numéro de téléphone déjà utilisé par un autre utilisateur.");
+                }
                 utilisateur.NomComplet = dto.NomComplet;
                 utilisateur.Telephone = dto.Telephone;
                 utilisateur.Adresse = dto.Adresse;
@@ -149,25 +157,9 @@ namespace Bookify_API.Controllers
             }
             else if (!string.IsNullOrEmpty(dto.Categorie))
             {
-                var search = dto.Categorie.ToLower()
-                    .Replace("é", "e").Replace("è", "e").Replace("ê", "e")
-                    .Replace("á", "a").Replace("à", "a").Replace("â", "a")
-                    .Replace("-", " ").Replace("&", "").Replace(" ", "");
-                    
+                var search = dto.Categorie.Trim().ToLower();
                 var allCats = await context.Categories.ToListAsync();
-                var cat = allCats.FirstOrDefault(c => {
-                    var cName = c.Nom.ToLower()
-                        .Replace("é", "e").Replace("è", "e").Replace("ê", "e")
-                        .Replace("á", "a").Replace("à", "a").Replace("â", "a")
-                        .Replace("-", " ").Replace("&", "").Replace(" ", "");
-                        
-                    if (search.Contains("sante") && cName.Contains("sante")) return true;
-                    if (search.Contains("beaute") && cName.Contains("beaute")) return true;
-                    if (search.Contains("profes") && cName.Contains("profes")) return true;
-                    if (search.Contains("technique") && cName.Contains("technique")) return true;
-                    
-                    return cName == search;
-                });
+                var cat = allCats.FirstOrDefault(c => c.Nom.Trim().ToLower() == search);
 
                 if (cat != null)
                 {
@@ -304,7 +296,9 @@ namespace Bookify_API.Controllers
                     nom = p.IdUtiliNavigation.NomComplet,
                     location = p.IdUtiliNavigation.Adresse,
                     specialite = p.Speciallite,
-                    rating = p.Note,
+                    rating = context.Avis.Where(a => a.IdPrestataire == p.IdPres).Any()
+                        ? Math.Round(context.Avis.Where(a => a.IdPrestataire == p.IdPres).Average(a => (double)a.Note), 1)
+                        : (double?)p.Note ?? 0,
                     description = p.Bio,
                     avatar = p.IdUtiliNavigation.Avatar,
                     categorie = p.IdCategorieNavigation != null ? p.IdCategorieNavigation.Nom : null,

@@ -81,14 +81,42 @@ namespace Bookify_API.Controllers
                 return BadRequest(new { message = "La note doit être comprise entre 1 et 5." });
             }
 
-            var hadAppointment = await _context.RendezVous.AnyAsync(r =>
-                r.IdUtili == clientId
-                && r.IdPres == dto.IdPrestataire
-                && r.Statut == "TERMINE");
+            // Update past appointments to TERMINE before checking
+            var now = DateTime.Now;
+            var pastRdvs = await _context.RendezVous
+                .Where(r => (r.Statut == "EN_ATTENTE" || r.Statut == "ACCEPTE")
+                    && r.IdUtili == clientId
+                    && r.IdPres == dto.IdPrestataire
+                    && r.DateDebut < now)
+                .ToListAsync();
+            if (pastRdvs.Count > 0)
+            {
+                foreach (var r in pastRdvs) r.Statut = "TERMINE";
+                await _context.SaveChangesAsync();
+            }
+
+            bool hadAppointment;
+            if (dto.IdRendezVous != null)
+            {
+                // Verify the specific rendez-vous belongs to the client and prestataire
+                hadAppointment = await _context.RendezVous.AnyAsync(r =>
+                    r.IdRendezVous == dto.IdRendezVous
+                    && r.IdUtili == clientId
+                    && r.IdPres == dto.IdPrestataire
+                    && (r.Statut == "TERMINE" || r.Statut == "ACCEPTE"));
+            }
+            else
+            {
+                // No specific RDV provided, check for any qualifying appointment
+                hadAppointment = await _context.RendezVous.AnyAsync(r =>
+                    r.IdUtili == clientId
+                    && r.IdPres == dto.IdPrestataire
+                    && (r.Statut == "TERMINE" || r.Statut == "ACCEPTE"));
+            }
 
             if (!hadAppointment)
             {
-                return BadRequest(new { message = "Vous ne pouvez évaluer que les prestataires avec qui vous avez eu un rendez-vous terminé." });
+                return BadRequest(new { message = "Vous ne pouvez évaluer que les prestataires avec qui vous avez eu un rendez-vous terminé ou accepté." });
             }
 
             var nouvelAvis = new Avis
@@ -102,7 +130,9 @@ namespace Bookify_API.Controllers
             };
 
             _context.Avis.Add(nouvelAvis);
+            await _context.SaveChangesAsync();
 
+            // Now calculate average AFTER the new avis is saved in DB
             var avg = await _context.Avis
                 .Where(a => a.IdPrestataire == dto.IdPrestataire)
                 .AverageAsync(a => (double?)a.Note) ?? 0;
@@ -111,9 +141,8 @@ namespace Bookify_API.Controllers
             if (prestataire != null)
             {
                 prestataire.Note = (decimal)avg;
+                await _context.SaveChangesAsync();
             }
-
-            await _context.SaveChangesAsync();
 
             return Ok(new { message = "Avis ajouté avec succès.", avisId = nouvelAvis.IdAvis });
         }
@@ -137,7 +166,9 @@ namespace Bookify_API.Controllers
 
             var prestataireId = avis.IdPrestataire;
             _context.Avis.Remove(avis);
+            await _context.SaveChangesAsync();
 
+            // Recalculate average AFTER deletion is saved
             var prestataire = await _context.Prestataires.FindAsync(prestataireId);
             if (prestataire != null)
             {
@@ -145,9 +176,8 @@ namespace Bookify_API.Controllers
                     .Where(a => a.IdPrestataire == prestataireId)
                     .AverageAsync(a => (double?)a.Note) ?? 0;
                 prestataire.Note = (decimal)avg;
+                await _context.SaveChangesAsync();
             }
-
-            await _context.SaveChangesAsync();
 
             return Ok(new { message = "Avis supprimé avec succès." });
         }

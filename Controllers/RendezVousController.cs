@@ -45,18 +45,34 @@ namespace Bookify_API.Controllers
                 _ => ""
             };
 
-            var timeDebut = dateDebut.TimeOfDay;
-            var timeFin = dateFin.TimeOfDay;
-
             var hasAnyDispo = await context.Disponibilites.AnyAsync(d => d.IdPres == idPres);
             if (!hasAnyDispo) return true;
 
-            return await context.Disponibilites
-                .AnyAsync(d => d.IdPres == idPres 
+            // Get all disponibilites for this day
+            var dayDispos = await context.Disponibilites
+                .Where(d => d.IdPres == idPres 
                     && (d.JourSemaine == dayShort || d.JourSemaine == dayLong)
-                    && d.Disponible == true
-                    && d.HeureDebut <= timeDebut
-                    && d.HeureFin >= timeFin);
+                    && d.Disponible == true)
+                .ToListAsync();
+
+            if (dayDispos.Count == 0) return false;
+
+            // If there's a full-day entry (HeureDebut is null), the whole day is available
+            if (dayDispos.Any(d => d.HeureDebut == null)) return true;
+
+            // Check each 1-hour sub-slot is covered by at least one disponibilite entry
+            var current = dateDebut.TimeOfDay;
+            var end = dateFin.TimeOfDay;
+            while (current < end)
+            {
+                var slotStart = current;
+                var slotEnd = current.Add(TimeSpan.FromHours(1));
+                var isCovered = dayDispos.Any(d => 
+                    d.HeureDebut <= slotStart && d.HeureFin >= slotEnd);
+                if (!isCovered) return false;
+                current = slotEnd;
+            }
+            return true;
         }
 
         private async Task<bool> HasOverlappingAcceptedRendezVous(int idPres, DateTime start, DateTime end, int? excludeRdvId = null)
@@ -117,6 +133,22 @@ namespace Bookify_API.Controllers
             return true;
         }
 
+        private async Task UpdatePastAppointmentsAsync()
+        {
+            var now = DateTime.Now;
+            var pastRdvs = await context.RendezVous
+                .Where(r => (r.Statut == "EN_ATTENTE" || r.Statut == "ACCEPTE")
+                    && r.DateDebut < now)
+                .ToListAsync();
+
+            if (pastRdvs.Count > 0)
+            {
+                foreach (var rdv in pastRdvs)
+                    rdv.Statut = "TERMINE";
+                await context.SaveChangesAsync();
+            }
+        }
+
         private async Task<(DateTime Start, DateTime End)?> FindNextAvailableSlot(int idPres, DateTime searchFrom, int duree, bool isFullDay, int excludeRdvId)
         {
             var today = searchFrom.Date < DateTime.Today ? DateTime.Today : searchFrom.Date;
@@ -125,8 +157,8 @@ namespace Bookify_API.Controllers
             {
                 for (int dayOffset = 0; dayOffset < 30; dayOffset++)
                 {
-                    var start = today.AddDays(dayOffset).Date.AddHours(9);
-                    var end = start.Date.AddDays(duree).AddHours(9).AddTicks(-1);
+                    var start = today.AddDays(dayOffset).Date;
+                    var end = start.AddDays(duree).AddTicks(-1);
 
                     if (await IsFullDaySlotAvailable(idPres, start, end))
                     {
@@ -242,9 +274,11 @@ namespace Bookify_API.Controllers
 
             if (isFullDayService)
             {
-                finalDateDebut = requestedDay.AddHours(9);
-                int daysToAdd = (service.UniteDuree == "JOUR") ? service.Duree : 1;
-                finalDateFin = requestedDay.AddDays(daysToAdd).AddHours(9).AddTicks(-1);
+                finalDateDebut = requestedDay.Date;
+                var unit = service.UniteDuree?.Trim().ToUpperInvariant();
+                bool isJour = unit != null && (unit.StartsWith("JOUR", StringComparison.Ordinal) || unit.StartsWith("DAY", StringComparison.Ordinal));
+                int daysToAdd = isJour ? service.Duree : 1;
+                finalDateFin = requestedDay.AddDays(daysToAdd).AddTicks(-1);
             }
             else
             {
@@ -339,6 +373,8 @@ namespace Bookify_API.Controllers
             {
                 return Forbid();
             }
+
+            await UpdatePastAppointmentsAsync();
             var rdvs = await context.RendezVous
                 .Where(r => r.IdUtili == id)
                 .Include(r => r.IdPresNavigation)
@@ -356,7 +392,8 @@ namespace Bookify_API.Controllers
                      {
                          r.IdSerNavigation.IdService,
                          r.IdSerNavigation.Nom,
-                         r.IdSerNavigation.Prix
+                         r.IdSerNavigation.Prix,
+                         r.IdSerNavigation.IsFullDay
                      },
                      prestataire = new
                      {
@@ -378,9 +415,12 @@ namespace Bookify_API.Controllers
         public async Task<IActionResult> GetByPrestataire(int id)
         {
             var tokenId = User.FindFirst("id")?.Value;
+            if (tokenId == null) return Unauthorized();
             var prestataire = await context.Prestataires
                 .FirstOrDefaultAsync(p => p.IdUtili == int.Parse(tokenId) && p.IdPres == id);
             if (prestataire == null) return Forbid();
+
+            await UpdatePastAppointmentsAsync();
 
             var rdvs = await context.RendezVous
                 .Where(r => r.IdPres == id)
@@ -397,7 +437,8 @@ namespace Bookify_API.Controllers
                     service = new
                     {
                         r.IdSerNavigation.Nom,
-                        r.IdSerNavigation.Prix
+                        r.IdSerNavigation.Prix,
+                        r.IdSerNavigation.IsFullDay
                     },
                     client = new
                     {
@@ -423,7 +464,7 @@ namespace Bookify_API.Controllers
                 .Include(r => r.IdSerNavigation)
                 .FirstOrDefaultAsync(r => r.IdRendezVous == id);
             if (rdv == null) return NotFound(new { message = "Rendez-Vous Introuvable" });
-            var tokenId = int.Parse(User.FindFirst("id")?.Value);
+            var tokenId = int.Parse(User.FindFirst("id")!.Value);
             if (rdv.IdPresNavigation.IdUtili != tokenId)
             {
                 return Forbid();
@@ -436,7 +477,9 @@ namespace Bookify_API.Controllers
             var finalFin = rdv.DateFin ?? rdv.DateDebut.AddHours(1);
             if (rdv.IdSerNavigation.IsFullDay)
             {
-                int daysToAdd = (rdv.IdSerNavigation.UniteDuree == "JOUR") ? rdv.IdSerNavigation.Duree : 1;
+                var unit = rdv.IdSerNavigation.UniteDuree?.Trim().ToUpperInvariant();
+                bool isJour = unit != null && (unit.StartsWith("JOUR", StringComparison.Ordinal) || unit.StartsWith("DAY", StringComparison.Ordinal));
+                int daysToAdd = isJour ? rdv.IdSerNavigation.Duree : 1;
                 finalFin = rdv.DateDebut.AddDays(daysToAdd).AddTicks(-1);
             }
 
@@ -472,11 +515,31 @@ namespace Bookify_API.Controllers
                 int slotDuree;
                 if (isPendingFullDay)
                 {
-                    slotDuree = (pendingRdv.IdSerNavigation.UniteDuree == "JOUR") ? duree : 1;
+                    if (pendingRdv.DateFin.HasValue)
+                    {
+                        var diff = pendingRdv.DateFin.Value - pendingRdv.DateDebut;
+                        slotDuree = (int)Math.Max(1, Math.Round(diff.TotalDays));
+                    }
+                    else
+                    {
+                        var unit = pendingRdv.IdSerNavigation.UniteDuree?.Trim().ToUpperInvariant();
+                        bool isJour = unit != null && (unit.StartsWith("JOUR", StringComparison.Ordinal) || unit.StartsWith("DAY", StringComparison.Ordinal));
+                        slotDuree = isJour ? duree : 1;
+                    }
                 }
                 else
                 {
-                    slotDuree = (pendingRdv.IdSerNavigation.UniteDuree == "HEURE") ? (duree * 60) : duree;
+                    if (pendingRdv.DateFin.HasValue)
+                    {
+                        var diff = pendingRdv.DateFin.Value - pendingRdv.DateDebut;
+                        slotDuree = (int)Math.Max(1, Math.Round(diff.TotalMinutes));
+                    }
+                    else
+                    {
+                        var unit = pendingRdv.IdSerNavigation.UniteDuree?.Trim().ToUpperInvariant();
+                        bool isHeure = unit == null || unit.StartsWith("HEURE", StringComparison.Ordinal) || unit.StartsWith("HOUR", StringComparison.Ordinal);
+                        slotDuree = isHeure ? (duree * 60) : duree;
+                    }
                 }
 
                 var newSlot = await FindNextAvailableSlot(pendingRdv.IdPres, searchFrom, slotDuree, isPendingFullDay, pendingRdv.IdRendezVous);
@@ -610,9 +673,11 @@ namespace Bookify_API.Controllers
             {
                 if (proposedDay.Date < DateTime.Today)
                     return BadRequest(new { message = "La date proposée doit être dans le futur." });
-                proposedDay = proposedDay.Date.AddHours(9);
-                int daysToAdd = (rdv.IdSerNavigation.UniteDuree == "JOUR") ? rdv.IdSerNavigation.Duree : 1;
-                proposedEnd = proposedDay.Date.AddDays(daysToAdd).AddHours(9).AddTicks(-1);
+                proposedDay = proposedDay.Date;
+                var unit = rdv.IdSerNavigation.UniteDuree?.Trim().ToUpperInvariant();
+                bool isJour = unit != null && (unit.StartsWith("JOUR", StringComparison.Ordinal) || unit.StartsWith("DAY", StringComparison.Ordinal));
+                int daysToAdd = isJour ? rdv.IdSerNavigation.Duree : 1;
+                proposedEnd = proposedDay.Date.AddDays(daysToAdd).AddTicks(-1);
             }
             else
             {
@@ -685,9 +750,11 @@ namespace Bookify_API.Controllers
             {
                 if (proposedDay.Date < DateTime.Today)
                     return BadRequest(new { message = "La date proposée doit être dans le futur." });
-                proposedDay = proposedDay.Date.AddHours(9);
-                int daysToAdd = (rdv.IdSerNavigation.UniteDuree == "JOUR") ? rdv.IdSerNavigation.Duree : 1;
-                proposedEnd = proposedDay.Date.AddDays(daysToAdd).AddHours(9).AddTicks(-1);
+                proposedDay = proposedDay.Date;
+                var unit = rdv.IdSerNavigation.UniteDuree?.Trim().ToUpperInvariant();
+                bool isJour = unit != null && (unit.StartsWith("JOUR", StringComparison.Ordinal) || unit.StartsWith("DAY", StringComparison.Ordinal));
+                int daysToAdd = isJour ? rdv.IdSerNavigation.Duree : 1;
+                proposedEnd = proposedDay.Date.AddDays(daysToAdd).AddTicks(-1);
             }
             else
             {
@@ -778,7 +845,7 @@ namespace Bookify_API.Controllers
 
             await context.Notifications.AddAsync(new Notification
             {
-                UtilisateurId = rdv.IdPresNavigation.IdUtili,
+                UtilisateurId =  rdv.IdPresNavigation.IdUtili,
                 Title = "Demande de Rendez-Vous Modifiée",
                 Message = $"Le client {rdv.IdUtiliNavigation.NomComplet} a modifié la date de sa demande de rendez-vous pour le {rdv.DateDebut:dd/MM/yyyy à HH:mm}",
                 IsRead = false,

@@ -59,6 +59,9 @@ namespace Bookify_API.Controllers
             if (await context.Utilisateurs.AnyAsync(u => u.Email == dto.Email))
                 return BadRequest("Email déjà utilisé");
 
+            if (!string.IsNullOrEmpty(dto.Telephone) && await context.Utilisateurs.AnyAsync(u => u.Telephone == dto.Telephone))
+                return BadRequest("Numéro de téléphone déjà utilisé");
+
             var user = new Utilisateur
             {
                 NomComplet = dto.NomComplet,

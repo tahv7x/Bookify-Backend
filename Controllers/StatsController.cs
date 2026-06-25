@@ -284,7 +284,7 @@ namespace Bookify_API.Controllers
                     id = a.IdAvis,
                     type = "avis",
                     title = "Nouvel avis reçu",
-                    message = $"{a.Utilisateur.NomComplet} a laissé une note de {a.Note}/5: \"{a.Commentaire.Substring(0, Math.Min(100, a.Commentaire.Length))}{(a.Commentaire.Length > 100 ? "..." : "")}\"",
+                    message = $"{a.Utilisateur.NomComplet} a laissé une note de {a.Note}/5: \"{(a.Commentaire ?? "").Substring(0, Math.Min(100, (a.Commentaire ?? "").Length))}{((a.Commentaire ?? "").Length > 100 ? "..." : "")}\"",
                     isRead = false,
                     createdAt = a.DateCreation,
                     rating = a.Note,

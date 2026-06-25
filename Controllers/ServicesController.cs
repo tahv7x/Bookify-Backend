@@ -52,7 +52,7 @@ namespace Bookify_API.Controllers
 
             if (!string.IsNullOrEmpty(city) && city != "Toutes")
             {
-                query = query.Where(s => s.IdPresNavigation.IdUtiliNavigation.Adresse.Contains(city));
+                query = query.Where(s => s.IdPresNavigation.IdUtiliNavigation.Adresse != null && s.IdPresNavigation.IdUtiliNavigation.Adresse.Contains(city));
             }
 
             if (minRating.HasValue && minRating.Value > 0)
@@ -138,8 +138,8 @@ namespace Bookify_API.Controllers
                 .Select(s => new ServiceDto
                 {
                     IdService = s.IdService,
-                    Nom = s.Nom,
-                    Description = s.Description,
+                    Nom = s.Nom ?? string.Empty,
+                    Description = s.Description ?? string.Empty,
                     Prix = s.Prix ?? 0,
                     Duree = s.Duree,
                     UniteDuree = s.UniteDuree,

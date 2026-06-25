@@ -85,6 +85,13 @@ namespace Bookify_API.Controllers
             var user = await context.Utilisateurs.FindAsync(id);
             if (user == null) return NotFound();
 
+            if (!string.IsNullOrEmpty(miseUtilisateur.Telephone) && 
+                miseUtilisateur.Telephone != user.Telephone && 
+                await context.Utilisateurs.AnyAsync(u => u.Telephone == miseUtilisateur.Telephone && u.IdUtilisateur != id))
+            {
+                return BadRequest("Numéro de téléphone déjà utilisé par un autre utilisateur.");
+            }
+
             user.NomComplet = miseUtilisateur.NomComplet;
             user.Telephone = miseUtilisateur.Telephone;
             user.Adresse = miseUtilisateur.Adresse;
